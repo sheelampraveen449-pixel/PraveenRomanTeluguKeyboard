@@ -1,0 +1,1 @@
+Retry build after switching to the current Android SDK setup action.

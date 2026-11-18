@@ -77,6 +77,34 @@ class RomanKeyboardService : InputMethodService() {
             clipboardManager?.removePrimaryClipChangedListener(it)
             clipboardManager?.addPrimaryClipChangedListener(it)
         }
+        updateAutoCapitalization()
+    }
+
+    private fun updateAutoCapitalization() {
+        val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        if (!prefs.getBoolean("auto_capitalization_enabled", true) || symbolsMode || capsLock) return
+
+        val inputType = currentInputEditorInfo?.inputType ?: return
+        if ((inputType and EditorInfo.TYPE_MASK_CLASS) != EditorInfo.TYPE_CLASS_TEXT) return
+
+        val requestsSentenceCaps =
+            (inputType and EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES) != 0
+        val requestsWordCaps =
+            (inputType and EditorInfo.TYPE_TEXT_FLAG_CAP_WORDS) != 0
+        val requestsAllCaps =
+            (inputType and EditorInfo.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0
+        if (!requestsSentenceCaps && !requestsWordCaps && !requestsAllCaps) return
+
+        val before = currentInputConnection?.getTextBeforeCursor(2, 0)?.toString().orEmpty()
+        val shouldShift = when {
+            requestsAllCaps -> true
+            requestsWordCaps -> before.isEmpty() || before.lastOrNull()?.isWhitespace() == true
+            else -> before.isEmpty() || before.lastOrNull() in listOf('.', '!', '?', '\n')
+        }
+        if (shifted != shouldShift) {
+            shifted = shouldShift
+            keyboardRoot?.let { renderKeyboard() }
+        }
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -681,6 +709,8 @@ class RomanKeyboardService : InputMethodService() {
                 if (shifted && !capsLock && !symbolsMode) {
                     shifted = false
                     renderKeyboard()
+                } else {
+                    updateAutoCapitalization()
                 }
             }, {
                 currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)

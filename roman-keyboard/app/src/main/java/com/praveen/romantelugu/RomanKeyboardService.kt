@@ -677,14 +677,28 @@ class RomanKeyboardService : InputMethodService() {
         )
         val personalWordSet = prefs.getStringSet("personal_dictionary", emptySet())
             ?.map { it.lowercase() }?.toSet().orEmpty()
+        val shortcuts = prefs.getStringSet("text_shortcuts", emptySet()).orEmpty()
+            .mapNotNull { entry ->
+                val separator = entry.indexOf('=')
+                if (separator <= 0 || separator == entry.lastIndex) null
+                else entry.substring(0, separator).trim().lowercase() to
+                    entry.substring(separator + 1).trim()
+            }.toMap()
+        val expansion = shortcuts[word.lowercase()]
         val corrected = if (
+            expansion == null &&
             prefs.getBoolean("basic_autocorrect_enabled", false) &&
             word.lowercase() !in personalWordSet
         ) {
             corrections[word.lowercase()]
         } else null
 
-        if (corrected != null && word.isNotEmpty()) {
+        if (expansion != null && word.isNotEmpty()) {
+            connection.deleteSurroundingTextInCodePoints(
+                word.codePointCount(0, word.length), 0
+            )
+            connection.commitText("$expansion ", 1)
+        } else if (corrected != null && word.isNotEmpty()) {
             connection.deleteSurroundingTextInCodePoints(
                 word.codePointCount(0, word.length), 0
             )
@@ -767,11 +781,23 @@ class RomanKeyboardService : InputMethodService() {
             .setNegativeButton("Close", null)
             .create()
 
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(6), dp(8), dp(6))
+        }
+        val search = EditText(this).apply {
+            hint = "Search emoji"
+            singleLine = true
+            textSize = 15f
+            contentDescription = "Search emojis by keyword or emoji"
+        }
+        panel.addView(search, LinearLayout.LayoutParams(-1, dp(48)))
         val scroll = ScrollView(this)
         val grid = android.widget.GridLayout(this).apply {
             columnCount = 6
-            setPadding(dp(8), dp(6), dp(8), dp(6))
+            setPadding(dp(2), dp(6), dp(2), dp(6))
         }
+        val emojiCells = mutableListOf<Pair<String, TextView>>()
         orderedEmojis.forEach { emoji ->
             val cell = TextView(this).apply {
                 text = emoji
@@ -798,9 +824,21 @@ class RomanKeyboardService : InputMethodService() {
                 }
             }
             grid.addView(cell)
+            emojiCells.add(emoji to cell)
         }
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = text?.toString()?.trim().orEmpty()
+                emojiCells.forEach { (emoji, cell) ->
+                    cell.visibility = if (query.isBlank() || emoji.contains(query, true)) View.VISIBLE else View.GONE
+                }
+            }
+            override fun afterTextChanged(text: android.text.Editable?) {}
+        })
         scroll.addView(grid)
-        dialog.setView(scroll)
+        panel.addView(scroll, LinearLayout.LayoutParams(-1, dp(360)))
+        dialog.setView(panel)
         dialog.show()
     }
 

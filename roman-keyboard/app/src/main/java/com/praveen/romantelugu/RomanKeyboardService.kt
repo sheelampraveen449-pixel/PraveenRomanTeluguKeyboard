@@ -109,7 +109,7 @@ class RomanKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         keyboardRoot = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(3, 5, 3, 6)
+            setPadding(dp(4), dp(4), dp(4), dp(5))
             setBackgroundColor(
                 when (getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
                     .getString("theme", "light")) {
@@ -127,29 +127,43 @@ class RomanKeyboardService : InputMethodService() {
         val root = keyboardRoot ?: return
         root.removeAllViews()
 
+        val preferences = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        val selectedTheme = preferences.getString("theme", "light")
+        root.setPadding(dp(4), dp(4), dp(4), dp(5))
+        root.setBackgroundColor(
+            when (selectedTheme) {
+                "dark" -> Color.rgb(31, 34, 40)
+                "blue" -> Color.rgb(207, 224, 247)
+                else -> Color.rgb(218, 222, 229)
+            }
+        )
+
+        // Compact, full-width toolbar. Language switching and keyboard hiding
+        // live on the bottom row so they cannot collide with toolbar controls.
         val toolbar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-
-        toolbar.addView(key("📋 History", 1.2f) {
+        toolbar.addView(toolButton("▤", 0.9f) {
             showingClipboardHistory = !showingClipboardHistory
             renderKeyboard()
         })
-        toolbar.addView(key("😀", 0.8f) {
+        toolbar.addView(toolButton("☺", 0.8f) {
             currentInputConnection?.commitText("😀", 1)
         })
 
-        val mic = key("🎙 Hold", 1.5f) {}
+        val mic = toolButton("🎙", 1.1f) {}
+        mic.contentDescription = "Hold to dictate in Telugu"
         mic.setOnTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    mic.text = "Listening..."
+                    mic.text = "Listening"
                     startVoice()
                     true
                 }
                 android.view.MotionEvent.ACTION_UP,
                 android.view.MotionEvent.ACTION_CANCEL -> {
-                    mic.text = "🎙 Hold"
+                    mic.text = "🎙"
                     stopVoice()
                     true
                 }
@@ -157,30 +171,25 @@ class RomanKeyboardService : InputMethodService() {
             }
         }
         toolbar.addView(mic)
-
-        toolbar.addView(key("⚙", 0.8f) {
+        toolbar.addView(toolButton("⚙", 0.8f) {
             val settingsIntent = Intent(this, KeyboardSettingsActivity::class.java)
-            settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(settingsIntent)
         })
-        toolbar.addView(key("✂", 0.8f) {
-            showEditMenu()
-        })
-        toolbar.addView(key("⇄", 0.8f) {
-            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
-                .showInputMethodPicker()
-        })
-        toolbar.addView(key("⌄", 0.8f) {
-            requestHideSelf(0)
-        })
-        root.addView(toolbar)
+        toolbar.addView(toolButton("✂", 0.8f) { showEditMenu() })
+        root.addView(
+            toolbar,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(40)
+            )
+        )
 
         if (showingClipboardHistory) {
             addClipboardHistoryPanel(root)
             return
         }
 
-        val preferences = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         if (preferences.getBoolean("suggestions_enabled", true)) {
             addSuggestionStrip(root)
         }
@@ -192,8 +201,11 @@ class RomanKeyboardService : InputMethodService() {
             addRow(root, "qwertyuiop", 1f)
             addRow(root, "asdfghjkl", 1f)
 
-            val third = LinearLayout(this).apply { gravity = Gravity.CENTER }
-            third.addView(key(if (capsLock) "⇪" else "⬆", 1.35f) {
+            val third = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+            }
+            third.addView(key(if (capsLock) "⇪" else "⇧", 1.25f) {
                 val now = System.currentTimeMillis()
                 if (now - lastShiftTap < 500) {
                     capsLock = !capsLock
@@ -204,6 +216,7 @@ class RomanKeyboardService : InputMethodService() {
                 lastShiftTap = now
                 renderKeyboard()
             })
+
             "zxcvbnm".forEach { c ->
                 val shown = if (shifted || capsLock) c.uppercaseChar() else c
                 val alternatives = mapOf(
@@ -221,7 +234,8 @@ class RomanKeyboardService : InputMethodService() {
                     currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)
                 }))
             }
-            val backspace = key("⌫", 1.35f) {}
+
+            val backspace = key("⌫", 1.25f) {}
             var repeatingDelete = false
             val repeatDelete = object : Runnable {
                 override fun run() {
@@ -231,9 +245,11 @@ class RomanKeyboardService : InputMethodService() {
                     }
                 }
             }
+            backspace.contentDescription = "Backspace. Hold to delete continuously"
             backspace.setOnTouchListener { _, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
+                        performKeyFeedback()
                         repeatingDelete = true
                         deleteBackward()
                         backspace.postDelayed(repeatDelete, 400)
@@ -249,35 +265,92 @@ class RomanKeyboardService : InputMethodService() {
                 }
             }
             third.addView(backspace)
-            root.addView(third)
+            root.addView(
+                third,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            )
         } else {
             addRow(root, "@#$%&-*+()", 1f)
             addRow(root, "!?/;:'\"_=", 1f)
             addRow(root, "[]{}<>\\|~`", 1f)
         }
 
-        val bottom = LinearLayout(this).apply { gravity = Gravity.CENTER }
-        bottom.addView(key(if (symbolsMode) "ABC" else "?123", 1.25f) {
+        // Standard bottom row: language switch at left, hide at right,
+        // with a wide unlabeled spacebar in the centre.
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        bottom.addView(key("🌐", 0.75f) {
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+                .showInputMethodPicker()
+        })
+        bottom.addView(key(if (symbolsMode) "ABC" else "?123", 1.05f) {
             symbolsMode = !symbolsMode
             shifted = false
             renderKeyboard()
         })
-        bottom.addView(key(",", 0.75f) {
+        bottom.addView(key(",", 0.55f) {
             currentInputConnection?.commitText(",", 1)
             updateSuggestionStrip()
         })
-        bottom.addView(key("Roman Telugu", 3.8f) {
+        val space = key(" ", 3.4f) {
             currentInputConnection?.commitText(" ", 1)
             updateSuggestionStrip()
-        })
-        bottom.addView(key(".", 0.75f) {
+        }
+        space.contentDescription = "Space"
+        bottom.addView(space)
+        bottom.addView(key(".", 0.55f) {
             currentInputConnection?.commitText(".", 1)
             updateSuggestionStrip()
         })
-        bottom.addView(key(enterKeyLabel(), 1.15f) {
-            performEnterAction()
-        })
-        root.addView(bottom)
+        bottom.addView(key(enterKeyLabel(), 1.05f) { performEnterAction() })
+        val hide = key("⌄", 0.65f) { requestHideSelf(0) }
+        hide.contentDescription = "Hide keyboard"
+        bottom.addView(hide)
+        root.addView(
+            bottom,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+    }
+
+    private fun toolButton(
+        label: String,
+        weight: Float,
+        action: () -> Unit
+    ): TextView {
+        val theme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+            .getString("theme", "light")
+        return TextView(this).apply {
+            text = label
+            textSize = 18f
+            gravity = Gravity.CENTER
+            contentDescription = label
+            setTextColor(if (theme == "dark") Color.WHITE else Color.rgb(35, 39, 48))
+            background = GradientDrawable().apply {
+                setColor(
+                    when (theme) {
+                        "dark" -> Color.rgb(48, 52, 61)
+                        "blue" -> Color.rgb(225, 237, 253)
+                        else -> Color.rgb(235, 238, 243)
+                    }
+                )
+                cornerRadius = dp(12).toFloat()
+            }
+            val params = LinearLayout.LayoutParams(0, dp(38), weight)
+            params.setMargins(dp(3), dp(1), dp(3), dp(1))
+            layoutParams = params
+            setOnClickListener {
+                performKeyFeedback()
+                action()
+            }
+        }
     }
 
     private fun deleteBackward() {
@@ -391,7 +464,7 @@ class RomanKeyboardService : InputMethodService() {
         }
 
         matches.forEach { word ->
-            row.addView(key(word, 1f) {
+            row.addView(toolButton(word, 1f) {
                 val currentBeforeCursor = currentInputConnection
                     ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
                 val currentWord = currentBeforeCursor
@@ -500,7 +573,13 @@ class RomanKeyboardService : InputMethodService() {
     }
 
     private fun addRow(root: LinearLayout, letters: String, weight: Float) {
-        val row = LinearLayout(this).apply { gravity = Gravity.CENTER }
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            if (letters.length == 9) {
+                setPadding(dp(15), 0, dp(15), 0)
+            }
+        }
         letters.forEach { c ->
             val label = if (!symbolsMode && (shifted || capsLock)) {
                 c.uppercaseChar().toString()
@@ -526,7 +605,13 @@ class RomanKeyboardService : InputMethodService() {
                 currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)
             }))
         }
-        root.addView(row)
+        root.addView(
+            row,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
     }
 
     private fun key(

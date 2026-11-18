@@ -425,8 +425,9 @@ class KeyboardSettingsActivity : Activity() {
         switchRow("Roman Telugu suggestions", "Show matching Roman Telugu words above the keyboard", "suggestions_enabled", true)
         switchRow("Contextual next-word suggestions", "Suggest likely words based on the word before the cursor", "next_word_enabled", true)
         switchRow("Personal dictionary suggestions", "Include words you add to your personal dictionary", "personal_dictionary_suggestions", true)
+        switchRow("Basic automatic correction", "Correct a small set of common typing mistakes when you press space", "basic_autocorrect_enabled", false)
         infoCard("How suggestions work", "Suggestions combine the built-in offline Roman Telugu word list, your personal words and a small contextual next-word model. Tapping a suggestion replaces the current word.")
-        infoCard("Feature status", "Basic Roman Telugu matching and contextual next-word suggestions are available. Editor-requested sentence capitalisation is supported. Full language-model prediction and automatic spelling correction are still in development.")
+        infoCard("Feature status", "Basic Roman Telugu matching and contextual next-word suggestions are available. Editor-requested sentence capitalisation is supported. Full language-model prediction and broader spelling correction are still in development.")
         navRow("📖", "Personal dictionary", "Add and manage your own words", "dictionary")
     }
 

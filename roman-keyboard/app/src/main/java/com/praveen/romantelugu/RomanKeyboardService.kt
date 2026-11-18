@@ -32,6 +32,7 @@ class RomanKeyboardService : InputMethodService() {
     private var recognizer: SpeechRecognizer? = null
     private var keyboardRoot: LinearLayout? = null
     private var symbolsMode = false
+    private var symbolsPageTwo = false
     private var shifted = false
     private var capsLock = false
     private var lastShiftTap = 0L
@@ -122,6 +123,7 @@ class RomanKeyboardService : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         symbolsMode = false
+        symbolsPageTwo = false
         shifted = false
         capsLock = false
         lastShiftTap = 0L
@@ -450,6 +452,35 @@ class RomanKeyboardService : InputMethodService() {
                     1f
                 )
             )
+        } else if (!symbolsPageTwo) {
+            val numberRows = listOf(
+                Triple("+", "1", "%"),
+                Triple("-", "2", "_"),
+                Triple("*", "3", "⌫"),
+                Triple("/", "0", "×")
+            )
+            val middleNumbers = listOf("123", "456", "789", "0  .")
+            numberRows.forEachIndexed { index, rowData ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
+                }
+                row.addView(key(rowData.first, 0.85f) { currentInputConnection?.commitText(rowData.first, 1) })
+                if (index < 3) {
+                    middleNumbers[index].forEach { digit ->
+                        row.addView(key(digit.toString(), 1f) { currentInputConnection?.commitText(digit.toString(), 1) })
+                    }
+                } else {
+                    row.addView(key("0", 1f) { currentInputConnection?.commitText("0", 1) })
+                    row.addView(key(".", 1f) { currentInputConnection?.commitText(".", 1) })
+                    row.addView(key("=", 1f) { currentInputConnection?.commitText("=", 1) })
+                }
+                row.addView(key(rowData.third, 0.85f) {
+                    if (rowData.third == "⌫") deleteBackward()
+                    else currentInputConnection?.commitText(rowData.third, 1)
+                })
+                root.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            }
         } else {
             addRow(root, "@#$%&-*+()", 1f)
             addRow(root, "!?/;:'\"_=", 1f)
@@ -462,31 +493,43 @@ class RomanKeyboardService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        bottom.addView(key("🌐", 0.75f) {
-            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
-                .showInputMethodPicker()
-        })
-        bottom.addView(key(if (symbolsMode) "ABC" else "?123", 1.05f) {
+        bottom.addView(key(if (symbolsMode) "ABC" else "?123", 0.9f) {
             symbolsMode = !symbolsMode
+            symbolsPageTwo = false
             shifted = false
             renderKeyboard()
         })
-        bottom.addView(key(",", 0.55f) {
-            currentInputConnection?.commitText(",", 1)
-            updateSuggestionStrip()
-        })
-        val space = key(" ", 3.4f) {
+        if (symbolsMode) {
+            bottom.addView(key(if (symbolsPageTwo) "123" else "!?#", 0.8f) {
+                symbolsPageTwo = !symbolsPageTwo
+                renderKeyboard()
+            })
+        } else {
+            bottom.addView(key(",", 0.5f) {
+                currentInputConnection?.commitText(",", 1)
+                updateSuggestionStrip()
+            })
+        }
+        val space = key(" ", if (symbolsMode) 2.8f else 3.4f) {
             commitSpaceWithOptionalCorrection()
             updateSuggestionStrip()
         }
         space.contentDescription = "Space"
         bottom.addView(space)
-        bottom.addView(key(".", 0.55f) {
-            currentInputConnection?.commitText(".", 1)
-            updateSuggestionStrip()
+        if (symbolsMode) {
+            bottom.addView(key("=", 0.65f) { currentInputConnection?.commitText("=", 1) })
+        } else {
+            bottom.addView(key(".", 0.5f) {
+                currentInputConnection?.commitText(".", 1)
+                updateSuggestionStrip()
+            })
+        }
+        bottom.addView(key(enterKeyLabel(), 0.95f) { performEnterAction() })
+        bottom.addView(key("🌐", 0.7f) {
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+                .showInputMethodPicker()
         })
-        bottom.addView(key(enterKeyLabel(), 1.05f) { performEnterAction() })
-        val hide = key("⌄", 0.65f) { requestHideSelf(0) }
+        val hide = key("⌄", 0.6f) { requestHideSelf(0) }
         hide.contentDescription = "Hide keyboard"
         bottom.addView(hide)
         root.addView(

@@ -123,6 +123,8 @@ class KeyboardSettingsActivity : Activity() {
             "languages" -> buildLanguages()
             "preferences" -> buildPreferences()
             "themes" -> buildThemes()
+            "fonts" -> buildFonts()
+            "search" -> buildSearch()
             "correction" -> buildCorrection()
             "voice" -> buildVoice()
             "clipboard" -> buildClipboard()
@@ -143,7 +145,9 @@ class KeyboardSettingsActivity : Activity() {
     private fun pageName(page: String) = when (page) {
         "languages" -> "Languages"
         "preferences" -> "Preferences"
-        "themes" -> "Themes"
+        "themes" -> "Theme"
+        "fonts" -> "Font"
+        "search" -> "Search"
         "correction" -> "Text correction"
         "voice" -> "Voice typing"
         "clipboard" -> "Clipboard"
@@ -292,21 +296,24 @@ class KeyboardSettingsActivity : Activity() {
     }
 
     private fun buildHome() {
-        section("LANGUAGES & LAYOUT")
-        navRow("🌐", "Languages", "Roman Telugu and English QWERTY", "languages")
-        navRow("⌨", "Preferences", "Keyboard behaviour, sound and vibration", "preferences")
-        navRow("🎨", "Theme", "Colours and keyboard appearance", "themes")
-        navRow("📐", "Keyboard height and layout", "Adjust key height and number row", "layout")
-        section("TEXT INPUT")
-        navRow("✍", "Text correction", "Suggestions, next words and correction", "correction")
-        navRow("〰", "Glide typing", "Swipe-to-type support status", "glide")
-        navRow("🎙", "Voice typing", "Telugu speech recognition", "voice")
-        section("PERSONAL CONTENT")
-        navRow("📋", "Clipboard", "On-device copied text history", "clipboard")
-        navRow("📖", "Dictionary", "Personal Roman Telugu words", "dictionary")
-        navRow("😊", "Emojis, stickers & GIFs", "Emoji picker and media feature status", "media")
-        section("MORE")
-        navRow("🔒", "Privacy", "Permissions and local data", "privacy")
+        section("PRAVEEN ROMAN TELUGU KEYBOARD", "Personalise your typing experience")
+        section("LANGUAGES & APPEARANCE")
+        navRow("🌐", "Languages", "Roman Telugu and English keyboard layouts", "languages")
+        navRow("⌨", "Preferences", "Number row, keys, height and behaviour", "preferences")
+        navRow("🎨", "Theme", "Default colours, keyboard backgrounds and key style", "themes")
+        navRow("Aa", "Font", "Choose the lettering style used on keys", "fonts")
+        navRow("📐", "Keyboard layout", "Adjust keyboard and key height", "layout")
+        section("TYPING")
+        navRow("✍", "Text correction", "Suggestions, next words and autocorrection", "correction")
+        navRow("〰", "Glide typing", "Swipe typing and gesture controls", "glide")
+        navRow("🎙", "Voice typing", "Telugu voice input and recognition options", "voice")
+        section("PERSONALISATION")
+        navRow("📋", "Clipboard", "Copied text and pinned items", "clipboard")
+        navRow("📖", "Dictionary", "Personal words, names and shortcuts", "dictionary")
+        navRow("😊", "Emojis, stickers & GIFs", "Emoji and media suggestions", "media")
+        navRow("🔎", "Search", "Keyboard search availability and options", "search")
+        section("PRIVACY & MORE")
+        navRow("🔒", "Privacy", "Personalisation, learning and local data", "privacy")
         navRow("⚙", "Advanced settings", "Additional keyboard controls", "advanced")
         navRow("ⓘ", "About", "App information and version", "about")
     }
@@ -325,16 +332,75 @@ class KeyboardSettingsActivity : Activity() {
         switchRow("Vibration", "Short haptic feedback on key taps", "key_vibration_enabled", false)
         section("KEYBOARD")
         switchRow("Number row", "Show numbers above the letter keys", "number_row_enabled", true)
-        infoCard("Tip", "You can change the keyboard height and layout separately.")
+        switchRow("Emoji switch key", "Show an emoji shortcut where supported", "emoji_switch_key_enabled", true)
+        switchRow("Language switch key", "Show the language switch key", "language_switch_key_enabled", true)
+        switchRow("Voice input key", "Show the microphone shortcut", "voice_input_key_enabled", true)
+        switchRow("Key borders", "Display borders around keys", "key_borders_enabled", false)
+        infoCard("Long-press delay", "Long-press timing uses Android's standard touch behaviour in this build.")
+        infoCard("Tip", "Keyboard height can be adjusted under Keyboard layout.")
     }
 
     private fun buildThemes() {
-        section("PREVIEW", "Your selected appearance is used by the keyboard.")
+        section("KEYBOARD PREVIEW", "Changes are saved on this device.")
         themePreview()
-        section("CHOOSE A THEME")
-        themeRow("Light", "light", "Bright keys with a soft background")
-        themeRow("Dark", "dark", "Dark surfaces for low-light typing")
-        themeRow("Blue", "blue", "A cool blue keyboard appearance")
+        section("DEFAULT COLOURS")
+        themeRow("Default", "light", "Classic light keyboard colours")
+        themeRow("Dark", "dark", "Dark keys and dark background")
+        themeRow("Blue", "blue", "Soft blue keys and background")
+        section("KEY STYLE")
+        switchRow("Key borders", "Show clear edges around individual keys", "key_borders_enabled", false)
+        switchRow("Rounded keys", "Use rounded corners on keyboard keys", "rounded_keys_enabled", true)
+        infoCard("More themes", "Custom photos, gradients and downloadable themes are not available yet. These options will be added without requiring internet access for the current offline themes.")
+    }
+
+    private fun buildFonts() {
+        section("KEYBOARD FONT", "Choose how letters appear on the keyboard.")
+        val selected = prefs.getString("keyboard_font", "sans-serif")
+        listOf(
+            Triple("System", "sans-serif", "Aa Bb Cc 123"),
+            Triple("Rounded", "sans-serif-rounded", "Aa Bb Cc 123"),
+            Triple("Serif", "serif", "Aa Bb Cc 123"),
+            Triple("Monospace", "monospace", "Aa Bb Cc 123")
+        ).forEach { (title, value, sample) ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = rounded(surface)
+                setPadding(dp(16), dp(16), dp(16), dp(16))
+            }
+            val labels = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            labels.addView(TextView(this).apply {
+                text = title
+                textSize = 16f
+                setTextColor(primary)
+                typeface = Typeface.create(value, Typeface.NORMAL)
+            })
+            labels.addView(TextView(this).apply {
+                text = sample
+                textSize = 18f
+                setTextColor(secondary)
+                typeface = Typeface.create(value, Typeface.NORMAL)
+                setPadding(0, dp(4), 0, 0)
+            })
+            card.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+            card.addView(TextView(this).apply {
+                text = if (selected == value) "✓" else "○"
+                textSize = 22f
+                setTextColor(accent)
+            })
+            card.setOnClickListener {
+                prefs.edit().putString("keyboard_font", value).apply()
+                renderPage("fonts", false)
+            }
+            addCard(card)
+        }
+        infoCard("Apply font", "Reopen the keyboard after selecting a font to see the change.")
+    }
+
+    private fun buildSearch() {
+        section("SEARCH")
+        infoCard("Keyboard search", "Integrated web and GIF search are not enabled in this offline-first version.")
+        infoCard("Privacy", "The keyboard does not request internet access or send your typed text to a search service.")
     }
 
     private fun themePreview() {

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -45,6 +46,8 @@ class KeyboardSettingsActivity : Activity() {
         prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         window.statusBarColor = bg
         window.navigationBarColor = bg
+        window.setBackgroundDrawable(ColorDrawable(bg))
+        window.decorView.setBackgroundColor(bg)
         renderPage("home", false)
     }
 
@@ -61,6 +64,8 @@ class KeyboardSettingsActivity : Activity() {
         currentPage = page
         window.statusBarColor = bg
         window.navigationBarColor = bg
+        window.setBackgroundDrawable(ColorDrawable(bg))
+        window.decorView.setBackgroundColor(bg)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -130,11 +135,9 @@ class KeyboardSettingsActivity : Activity() {
             "about" -> buildAbout()
         }
 
-        if (animate) {
-            root.startAnimation(
-                AnimationUtils.loadAnimation(this, android.R.anim.fade_in)
-            )
-        }
+        // Avoid a white frame during page changes in dark mode.
+        // Replacing the content view directly keeps the selected theme visible.
+        root.clearAnimation()
     }
 
     private fun pageName(page: String) = when (page) {

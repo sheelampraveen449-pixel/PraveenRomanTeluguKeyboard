@@ -17,6 +17,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.LinearLayout
+import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ScrollView
 import android.widget.TextView

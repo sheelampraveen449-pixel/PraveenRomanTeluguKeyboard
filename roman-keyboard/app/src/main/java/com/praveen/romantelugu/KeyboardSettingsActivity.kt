@@ -13,6 +13,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.*
+import android.text.InputFilter
 import android.text.InputType
 
 class KeyboardSettingsActivity : Activity() {

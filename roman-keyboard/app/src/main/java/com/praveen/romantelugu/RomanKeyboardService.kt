@@ -435,22 +435,42 @@ class RomanKeyboardService : InputMethodService() {
 
             val backspace = key("⌫", 1.25f) {}
             var repeatingDelete = false
+            var deleteWordOnSwipe = false
+            var backspaceDownX = 0f
             val repeatDelete = object : Runnable {
                 override fun run() {
-                    if (repeatingDelete) {
+                    if (repeatingDelete && !deleteWordOnSwipe) {
                         deleteBackward()
                         backspace.postDelayed(this, 65)
                     }
                 }
             }
-            backspace.contentDescription = "Backspace. Hold to delete continuously"
+            backspace.contentDescription = "Backspace. Hold to delete continuously; swipe left to delete the previous word"
             backspace.setOnTouchListener { _, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
                         performKeyFeedback()
+                        backspaceDownX = event.rawX
+                        deleteWordOnSwipe = false
                         repeatingDelete = true
                         deleteBackward()
                         backspace.postDelayed(repeatDelete, 400)
+                        true
+                    }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        if (!deleteWordOnSwipe && backspaceDownX - event.rawX > dp(32)) {
+                            deleteWordOnSwipe = true
+                            repeatingDelete = false
+                            backspace.removeCallbacks(repeatDelete)
+                            val before = currentInputConnection?.getTextBeforeCursor(256, 0)?.toString().orEmpty()
+                            val count = before.takeLastWhile { !it.isWhitespace() }
+                                .codePointCount(0, before.takeLastWhile { !it.isWhitespace() })
+                            if (count > 0) {
+                                currentInputConnection?.deleteSurroundingTextInCodePoints(count, 0)
+                                updateSuggestionStrip()
+                                updateAutoCapitalization()
+                            }
+                        }
                         true
                     }
                     android.view.MotionEvent.ACTION_UP,

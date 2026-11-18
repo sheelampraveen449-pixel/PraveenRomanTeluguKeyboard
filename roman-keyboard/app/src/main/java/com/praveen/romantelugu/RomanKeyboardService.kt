@@ -490,16 +490,32 @@ class RomanKeyboardService : InputMethodService() {
         row.removeAllViews()
 
         val beforeCursor = currentInputConnection
-            ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
+            ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
         val prefix = beforeCursor.takeLastWhile { it.isLetter() }.lowercase()
-        val matches = if (prefix.isBlank()) {
-            listOf("nenu", "meeru", "ela")
-        } else {
-            romanTeluguWords.filter { it.startsWith(prefix) }.distinct().take(3)
-        }
+        val previousWord = beforeCursor.dropLast(prefix.length)
+            .trimEnd().takeLastWhile { it.isLetter() }.lowercase()
 
-        val theme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-            .getString("theme", "light")
+        val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        val personalWords = prefs.getStringSet("personal_dictionary", emptySet())
+            ?.toList().orEmpty()
+        val nextWords = mapOf(
+            "nenu" to listOf("bagunnanu", "vastanu", "cheptanu"),
+            "meeru" to listOf("ela", "ekkada", "vastారా"),
+            "ela" to listOf("unnaru", "undi", "undhi"),
+            "naaku" to listOf("kavali", "telusu", "ardham"),
+            "em" to listOf("chesావు", "jarigindi", "kavali"),
+            "repu" to listOf("vastanu", "kaluddam", "matladuddam"),
+            "ippudu" to listOf("cheppu", "randi", "chuddam")
+        )
+        val candidates = if (prefix.isBlank()) {
+            (nextWords[previousWord].orEmpty() + listOf("nenu", "meeru", "ela"))
+        } else {
+            (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
+                romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) })
+        }
+        val matches = candidates.distinct().take(3)
+
+        val theme = prefs.getString("theme", "light")
         val textColor = if (theme == "dark") Color.rgb(230, 233, 239) else Color.rgb(55, 61, 70)
 
         if (matches.isEmpty()) {
@@ -513,7 +529,7 @@ class RomanKeyboardService : InputMethodService() {
             return
         }
 
-        matches.take(3).forEachIndexed { index, word ->
+        matches.forEachIndexed { index, word ->
             val suggestion = TextView(this).apply {
                 text = word
                 textSize = 15f
@@ -523,10 +539,10 @@ class RomanKeyboardService : InputMethodService() {
                 layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
                 setOnClickListener {
                     val currentBeforeCursor = currentInputConnection
-                        ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
+                        ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
                     val currentWord = currentBeforeCursor.takeLastWhile { it.isLetter() }
                     if (currentWord.isNotEmpty()) {
-                        currentInputConnection?.deleteSurroundingText(currentWord.length, 0)
+                        currentInputConnection?.deleteSurroundingTextInCodePoints(currentWord.codePointCount(0, currentWord.length), 0)
                     }
                     currentInputConnection?.commitText("$word ", 1)
                     updateSuggestionStrip()

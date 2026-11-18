@@ -49,7 +49,11 @@ class KeyboardSettingsActivity : Activity() {
         window.setBackgroundDrawable(ColorDrawable(bg))
         window.decorView.setBackgroundColor(bg)
         val requestedPage = intent.getStringExtra("open_page")
-            ?.takeIf { it in setOf("home", "themes", "layout", "shortcuts") } ?: "home"
+            ?.takeIf { it in setOf(
+                "home", "languages", "preferences", "themes", "fonts", "search",
+                "correction", "voice", "clipboard", "dictionary", "layout",
+                "shortcuts", "glide", "media", "advanced", "privacy", "about"
+            ) } ?: "home"
         renderPage(requestedPage, false)
     }
 
@@ -224,10 +228,14 @@ class KeyboardSettingsActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(13), dp(8), dp(13))
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            minimumHeight = dp(68)
             isClickable = true
             isFocusable = true
-            setBackgroundResource(android.R.drawable.list_selector_background)
+            background = android.util.TypedValue().let { value ->
+                theme.resolveAttribute(android.R.attr.selectableItemBackground, value, true)
+                getDrawable(value.resourceId)
+            }
             setOnClickListener { renderPage(destination) }
         }
 
@@ -262,10 +270,9 @@ class KeyboardSettingsActivity : Activity() {
             setTextColor(secondary)
             layoutParams = LinearLayout.LayoutParams(dp(28), dp(42))
         })
-        addCard(card)
-        content.addView(View(this).apply {
-            setBackgroundColor(if (dark) Color.rgb(55, 59, 68) else Color.rgb(225, 228, 234))
-        }, LinearLayout.LayoutParams(-1, dp(1)))
+        val params = LinearLayout.LayoutParams(-1, -2)
+        params.bottomMargin = dp(2)
+        content.addView(card, params)
     }
 
     private fun switchRow(

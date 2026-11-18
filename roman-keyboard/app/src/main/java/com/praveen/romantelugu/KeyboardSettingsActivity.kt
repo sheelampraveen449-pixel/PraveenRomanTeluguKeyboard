@@ -552,6 +552,7 @@ class KeyboardSettingsActivity : Activity() {
         infoCard("Roman Telugu typing", "Typed text is sent to the active app through Android's keyboard input connection.")
         infoCard("Clipboard", "Clipboard history is optional and stored locally. You can disable it or clear saved entries at any time.")
         infoCard("Voice typing", "Voice recognition uses the Android speech-recognition service. Speech processing may be handled by that service according to its own privacy policy.")
+        infoCard("Password-field protection", "Suggestions, automatic correction, clipboard-history capture and voice dictation are disabled in standard password fields. The keyboard does not add typed password text to its personal dictionary.")
         infoCard("Permissions", "This app requests microphone permission for voice typing. It does not require overlay or accessibility permissions.")
     }
 

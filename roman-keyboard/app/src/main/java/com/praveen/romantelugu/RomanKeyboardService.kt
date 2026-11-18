@@ -50,6 +50,7 @@ class RomanKeyboardService : InputMethodService() {
     private var swipeStartY = 0f
     private var swipeMoved = false
     private var pendingSwipeWord: String? = null
+    private var englishAlMode = false
 
     private val romanTeluguWords = listOf(
         "nenu", "naaku", "naatho", "nuvvu", "neeku", "neetho",
@@ -125,6 +126,8 @@ class RomanKeyboardService : InputMethodService() {
         super.onStartInput(attribute, restarting)
         symbolsMode = false
         symbolsPageTwo = false
+        englishAlMode = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+            .getBoolean("english_al_mode", false)
         shifted = false
         capsLock = false
         lastShiftTap = 0L
@@ -390,7 +393,9 @@ class RomanKeyboardService : InputMethodService() {
         } else {
             suggestionRow = null
         }
-        if (preferences.getBoolean("number_row_enabled", true)) {
+        // Gboard-style symbol pages already contain their own digit row;
+        // never render the optional alphabet number row on top of them.
+        if (!symbolsMode && preferences.getBoolean("number_row_enabled", true)) {
             addRow(root, "1234567890", 1f)
         }
 
@@ -493,38 +498,15 @@ class RomanKeyboardService : InputMethodService() {
                 )
             )
         } else if (!symbolsPageTwo) {
-            val numberRows = listOf(
-                Triple("+", "1", "%"),
-                Triple("-", "2", "_"),
-                Triple("*", "3", "⌫"),
-                Triple("/", "0", "×")
-            )
-            val middleNumbers = listOf("123", "456", "789", "0  .")
-            numberRows.forEachIndexed { index, rowData ->
-                val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER
-                }
-                row.addView(key(rowData.first, 0.85f) { currentInputConnection?.commitText(rowData.first, 1) })
-                if (index < 3) {
-                    middleNumbers[index].forEach { digit ->
-                        row.addView(key(digit.toString(), 1f) { currentInputConnection?.commitText(digit.toString(), 1) })
-                    }
-                } else {
-                    row.addView(key("0", 1f) { currentInputConnection?.commitText("0", 1) })
-                    row.addView(key(".", 1f) { currentInputConnection?.commitText(".", 1) })
-                    row.addView(key("=", 1f) { currentInputConnection?.commitText("=", 1) })
-                }
-                row.addView(key(rowData.third, 0.85f) {
-                    if (rowData.third == "⌫") deleteBackward()
-                    else currentInputConnection?.commitText(rowData.third, 1)
-                })
-                root.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-            }
-        } else {
+            // Gboard-like first symbols page: one digit row followed by two
+            // punctuation rows. The alphabet number row is intentionally hidden.
+            addRow(root, "1234567890", 1f)
             addRow(root, "@#$%&-*+()", 1f)
-            addRow(root, "!?/;:'\"_=", 1f)
-            addRow(root, "[]{}<>\\|~`", 1f)
+            addRow(root, "=/:;!?'\"", 1f)
+        } else {
+            addRow(root, "~`|•√π÷×¶∆", 1f)
+            addRow(root, "£¢€¥^°={}\\", 1f)
+            addRow(root, "%©®™✓[]<>", 1f)
         }
 
         // Standard bottom row: language switch at left, hide at right,
@@ -550,7 +532,8 @@ class RomanKeyboardService : InputMethodService() {
                 updateSuggestionStrip()
             })
         }
-        val space = key(" ", if (symbolsMode) 2.8f else 3.4f) {
+        val spaceLabel = if (englishAlMode) "English (AL)" else "Roman Telugu"
+        val space = key(spaceLabel, if (symbolsMode) 2.8f else 3.4f) {
             commitSpaceWithOptionalCorrection()
             updateSuggestionStrip()
         }
@@ -605,10 +588,16 @@ class RomanKeyboardService : InputMethodService() {
         }
         bottom.addView(key(enterKeyLabel(), 0.95f) { performEnterAction() })
         if (preferences.getBoolean("language_switch_key_enabled", true)) {
-            bottom.addView(key("🌐", 0.7f) {
+            bottom.addView(key("🌐", 0.7f, {
+                // Switch the keyboard's own input profile without opening
+                // Android's system IME picker on every tap.
+                englishAlMode = !englishAlMode
+                preferences.edit().putBoolean("english_al_mode", englishAlMode).apply()
+                renderKeyboard()
+            }, {
                 (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
                     .showInputMethodPicker()
-            })
+            }))
         }
         val hide = key("⌄", 0.6f) { requestHideSelf(0) }
         hide.contentDescription = "Hide keyboard"

@@ -528,7 +528,7 @@ class KeyboardSettingsActivity : Activity() {
 
     private fun buildLayout() {
         section("KEY SIZE")
-        val current = prefs.getInt("key_height_dp", 47).coerceIn(40, 58)
+        val current = prefs.getInt("key_height_dp", 42).coerceIn(38, 50)
         val valueLabel = TextView(this).apply {
             text = "Key height: ${current} dp"
             textSize = 15f
@@ -537,11 +537,11 @@ class KeyboardSettingsActivity : Activity() {
         }
         addCard(valueLabel)
         val seek = SeekBar(this).apply {
-            max = 18
-            progress = current - 40
+            max = 12
+            progress = current - 38
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val height = progress + 40
+                    val height = progress + 38
                     valueLabel.text = "Key height: $height dp"
                     prefs.edit().putInt("key_height_dp", height).apply()
                 }

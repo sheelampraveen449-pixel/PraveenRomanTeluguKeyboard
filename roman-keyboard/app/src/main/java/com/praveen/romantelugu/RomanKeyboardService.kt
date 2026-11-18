@@ -115,7 +115,7 @@ class RomanKeyboardService : InputMethodService() {
                     .getString("theme", "light")) {
                     "dark" -> Color.rgb(35, 38, 44)
                     "blue" -> Color.rgb(205, 224, 250)
-                    else -> Color.rgb(225, 229, 235)
+                    else -> Color.rgb(211, 216, 224)
                 }
             )
         }
@@ -132,9 +132,9 @@ class RomanKeyboardService : InputMethodService() {
         root.setPadding(dp(4), dp(4), dp(4), dp(5))
         root.setBackgroundColor(
             when (selectedTheme) {
-                "dark" -> Color.rgb(31, 34, 40)
+                "dark" -> Color.rgb(30, 33, 39)
                 "blue" -> Color.rgb(207, 224, 247)
-                else -> Color.rgb(218, 222, 229)
+                else -> Color.rgb(211, 216, 224)
             }
         )
 
@@ -329,22 +329,20 @@ class RomanKeyboardService : InputMethodService() {
             .getString("theme", "light")
         return TextView(this).apply {
             text = label
-            textSize = 18f
+            textSize = 19f
             gravity = Gravity.CENTER
             contentDescription = label
-            setTextColor(if (theme == "dark") Color.WHITE else Color.rgb(35, 39, 48))
+            setTextColor(if (theme == "dark") Color.rgb(226, 230, 238) else Color.rgb(75, 82, 94))
             background = GradientDrawable().apply {
-                setColor(
-                    when (theme) {
-                        "dark" -> Color.rgb(48, 52, 61)
-                        "blue" -> Color.rgb(225, 237, 253)
-                        else -> Color.rgb(235, 238, 243)
-                    }
-                )
-                cornerRadius = dp(12).toFloat()
+                setColor(when (theme) {
+                    "dark" -> Color.rgb(39, 43, 51)
+                    "blue" -> Color.rgb(207, 224, 247)
+                    else -> Color.rgb(218, 222, 229)
+                })
+                cornerRadius = dp(20).toFloat()
             }
-            val params = LinearLayout.LayoutParams(0, dp(38), weight)
-            params.setMargins(dp(3), dp(1), dp(3), dp(1))
+            val params = LinearLayout.LayoutParams(0, dp(40), weight)
+            params.setMargins(dp(2), dp(1), dp(2), dp(1))
             layoutParams = params
             setOnClickListener {
                 performKeyFeedback()
@@ -419,13 +417,15 @@ class RomanKeyboardService : InputMethodService() {
 
     private fun addSuggestionStrip(root: LinearLayout) {
         suggestionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            setPadding(dp(5), 0, dp(5), 0)
         }
         root.addView(
             suggestionRow,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(42)
+                dp(39)
             )
         )
         updateSuggestionStrip()
@@ -437,47 +437,54 @@ class RomanKeyboardService : InputMethodService() {
 
         val beforeCursor = currentInputConnection
             ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
-        val prefix = beforeCursor.takeLastWhile { it.isLetter() }
-            .lowercase()
-
+        val prefix = beforeCursor.takeLastWhile { it.isLetter() }.lowercase()
         val matches = if (prefix.isBlank()) {
             listOf("nenu", "meeru", "ela")
         } else {
-            romanTeluguWords
-                .filter { it.startsWith(prefix) }
-                .distinct()
-                .take(3)
+            romanTeluguWords.filter { it.startsWith(prefix) }.distinct().take(3)
         }
+
+        val theme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+            .getString("theme", "light")
+        val textColor = if (theme == "dark") Color.rgb(230, 233, 239) else Color.rgb(55, 61, 70)
 
         if (matches.isEmpty()) {
             row.addView(TextView(this).apply {
                 text = "Roman Telugu"
                 textSize = 13f
                 gravity = Gravity.CENTER
-                setTextColor(Color.GRAY)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                )
+                setTextColor(if (theme == "dark") Color.LTGRAY else Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
             })
             return
         }
 
-        matches.forEach { word ->
-            row.addView(toolButton(word, 1f) {
-                val currentBeforeCursor = currentInputConnection
-                    ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
-                val currentWord = currentBeforeCursor
-                    .takeLastWhile { it.isLetter() }
-
-                if (currentWord.isNotEmpty()) {
-                    currentInputConnection?.deleteSurroundingText(
-                        currentWord.length, 0
-                    )
+        matches.take(3).forEachIndexed { index, word ->
+            val suggestion = TextView(this).apply {
+                text = word
+                textSize = 15f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                gravity = Gravity.CENTER
+                setTextColor(textColor)
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
+                setOnClickListener {
+                    val currentBeforeCursor = currentInputConnection
+                        ?.getTextBeforeCursor(60, 0)?.toString().orEmpty()
+                    val currentWord = currentBeforeCursor.takeLastWhile { it.isLetter() }
+                    if (currentWord.isNotEmpty()) {
+                        currentInputConnection?.deleteSurroundingText(currentWord.length, 0)
+                    }
+                    currentInputConnection?.commitText("$word ", 1)
+                    updateSuggestionStrip()
                 }
-                currentInputConnection?.commitText("$word ", 1)
-                updateSuggestionStrip()
-            })
+            }
+            row.addView(suggestion)
+            if (index < matches.size - 1) {
+                row.addView(View(this).apply {
+                    setBackgroundColor(if (theme == "dark") Color.rgb(75, 80, 90) else Color.rgb(190, 195, 203))
+                    layoutParams = LinearLayout.LayoutParams(dp(1), dp(22))
+                })
+            }
         }
     }
 
@@ -635,27 +642,55 @@ class RomanKeyboardService : InputMethodService() {
     ): TextView {
         return TextView(this).apply {
             text = label
-            textSize = if (label.length > 3) 13f else 18f
-            gravity = Gravity.CENTER
-            val selectedTheme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getString("theme", "light")
-            setTextColor(if (selectedTheme == "dark") Color.WHITE else Color.BLACK)
-            background = GradientDrawable().apply {
-                setColor(
-                    when (selectedTheme) {
-                        "dark" -> Color.rgb(65, 69, 78)
-                        "blue" -> Color.rgb(250, 252, 255)
-                        else -> Color.WHITE
-                    }
-                )
-                cornerRadius = dp(7).toFloat()
+            textSize = when {
+                label.length > 4 -> 12f
+                label.length > 1 -> 15f
+                label == " " -> 16f
+                else -> 21f
             }
-            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            val theme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+                .getString("theme", "light")
+            val isActionKey = label in setOf("⇧", "⇪", "⌫", "?123", "ABC", ",", ".", "🌐", "⌄") ||
+                label in setOf("Go", "Search", "Send", "Next", "Done", "↵")
+            val isEnter = label in setOf("Go", "Search", "Send", "Next", "Done", "↵")
+            val keyColor = when (theme) {
+                "dark" -> when {
+                    isEnter -> Color.rgb(75, 105, 151)
+                    isActionKey -> Color.rgb(70, 75, 85)
+                    else -> Color.rgb(55, 60, 69)
+                }
+                "blue" -> when {
+                    isEnter -> Color.rgb(139, 180, 238)
+                    isActionKey -> Color.rgb(190, 211, 239)
+                    else -> Color.rgb(250, 252, 255)
+                }
+                else -> when {
+                    isEnter -> Color.rgb(168, 198, 245)
+                    isActionKey -> Color.rgb(205, 211, 220)
+                    else -> Color.WHITE
+                }
+            }
+            setTextColor(
+                if (theme == "dark" && !isEnter) Color.rgb(242, 244, 248)
+                else Color.rgb(32, 36, 43)
+            )
+            background = GradientDrawable().apply {
+                setColor(keyColor)
+                cornerRadius = dp(if (label == " ") 8 else 6).toFloat()
+            }
+            typeface = Typeface.create(
+                if (isActionKey) "sans-serif-medium" else "sans-serif",
+                if (isActionKey) Typeface.NORMAL else Typeface.NORMAL
+            )
             val keyHeight = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getInt("key_height_dp", 47).coerceIn(40, 64)
+                .getInt("key_height_dp", 47).coerceIn(40, 58)
             val params = LinearLayout.LayoutParams(0, dp(keyHeight), weight)
-            params.setMargins(2, 3, 2, 3)
+            params.setMargins(dp(2), dp(3), dp(2), dp(3))
             layoutParams = params
+            elevation = dp(if (isActionKey) 0 else 1).toFloat()
+            setPadding(dp(1), 0, dp(1), 0)
+            isSingleLine = true
             setOnClickListener { performKeyFeedback(); action() }
             if (longAction != null) {
                 setOnLongClickListener {

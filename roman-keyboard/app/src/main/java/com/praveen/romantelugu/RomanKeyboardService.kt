@@ -128,6 +128,8 @@ class RomanKeyboardService : InputMethodService() {
         pendingSwipeWord = null
         swipePath.clear()
         swipeMoved = false
+        // Clear candidates from the previous editor before the new input view refreshes.
+        suggestionRow?.removeAllViews()
     }
 
     override fun onStartInputView(

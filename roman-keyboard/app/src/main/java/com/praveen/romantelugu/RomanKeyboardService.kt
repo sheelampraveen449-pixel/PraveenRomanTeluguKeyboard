@@ -500,10 +500,10 @@ class RomanKeyboardService : InputMethodService() {
             ?.toList().orEmpty()
         val nextWords = mapOf(
             "nenu" to listOf("bagunnanu", "vastanu", "cheptanu"),
-            "meeru" to listOf("ela", "ekkada", "vastారా"),
+            "meeru" to listOf("ela", "ekkada", "vastunnara"),
             "ela" to listOf("unnaru", "undi", "undhi"),
             "naaku" to listOf("kavali", "telusu", "ardham"),
-            "em" to listOf("chesావు", "jarigindi", "kavali"),
+            "em" to listOf("chesavu", "jarigindi", "kavali"),
             "repu" to listOf("vastanu", "kaluddam", "matladuddam"),
             "ippudu" to listOf("cheppu", "randi", "chuddam")
         )

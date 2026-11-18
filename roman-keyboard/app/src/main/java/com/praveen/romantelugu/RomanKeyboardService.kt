@@ -533,7 +533,46 @@ class RomanKeyboardService : InputMethodService() {
             commitSpaceWithOptionalCorrection()
             updateSuggestionStrip()
         }
-        space.contentDescription = "Space"
+        space.contentDescription = "Space. Swipe left or right to move the text cursor"
+        var cursorGestureMoved = false
+        var cursorGestureLastX = 0f
+        var cursorGestureRemainder = 0f
+        space.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    cursorGestureMoved = false
+                    cursorGestureLastX = event.rawX
+                    cursorGestureRemainder = 0f
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val delta = event.rawX - cursorGestureLastX
+                    cursorGestureLastX = event.rawX
+                    cursorGestureRemainder += delta
+                    val step = dp(12).coerceAtLeast(1)
+                    val moves = (cursorGestureRemainder / step).toInt()
+                    if (moves != 0) {
+                        val extracted = currentInputConnection?.getExtractedText(
+                            android.view.inputmethod.ExtractedTextRequest(), 0
+                        )
+                        if (extracted != null && extracted.selectionStart >= 0) {
+                            val target = (extracted.selectionStart + moves)
+                                .coerceIn(0, extracted.text?.length ?: extracted.selectionStart)
+                            currentInputConnection?.setSelection(target, target)
+                            cursorGestureMoved = true
+                            cursorGestureRemainder -= moves * step
+                        }
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (!cursorGestureMoved) view.performClick()
+                    true
+                }
+                android.view.MotionEvent.ACTION_CANCEL -> true
+                else -> true
+            }
+        }
         bottom.addView(space)
         if (symbolsMode) {
             bottom.addView(key("=", 0.65f) { currentInputConnection?.commitText("=", 1) })

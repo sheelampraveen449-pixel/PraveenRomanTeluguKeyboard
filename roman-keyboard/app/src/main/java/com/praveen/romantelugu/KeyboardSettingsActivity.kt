@@ -49,7 +49,7 @@ class KeyboardSettingsActivity : Activity() {
         window.setBackgroundDrawable(ColorDrawable(bg))
         window.decorView.setBackgroundColor(bg)
         val requestedPage = intent.getStringExtra("open_page")
-            ?.takeIf { it in setOf("home", "themes", "layout") } ?: "home"
+            ?.takeIf { it in setOf("home", "themes", "layout", "shortcuts") } ?: "home"
         renderPage(requestedPage, false)
     }
 
@@ -132,6 +132,7 @@ class KeyboardSettingsActivity : Activity() {
             "clipboard" -> buildClipboard()
             "dictionary" -> buildDictionary()
             "layout" -> buildLayout()
+            "shortcuts" -> buildTextShortcuts()
             "glide" -> buildGlide()
             "media" -> buildMedia()
             "advanced" -> buildAdvanced()
@@ -155,6 +156,7 @@ class KeyboardSettingsActivity : Activity() {
         "clipboard" -> "Clipboard"
         "dictionary" -> "Dictionary"
         "layout" -> "Keyboard layout"
+        "shortcuts" -> "Text shortcuts"
         "glide" -> "Glide typing"
         "media" -> "Emojis, stickers & GIFs"
         "advanced" -> "Advanced settings"
@@ -311,7 +313,8 @@ class KeyboardSettingsActivity : Activity() {
         navRow("🎙", "Voice typing", "Telugu voice input and recognition options", "voice")
         section("PERSONALISATION")
         navRow("📋", "Clipboard", "Copied text and pinned items", "clipboard")
-        navRow("📖", "Dictionary", "Personal words, names and shortcuts", "dictionary")
+        navRow("📖", "Dictionary", "Personal words and custom text shortcuts", "dictionary")
+        navRow("⌨", "Text shortcuts", "Expand short abbreviations into full phrases", "shortcuts")
         navRow("😊", "Emojis, stickers & GIFs", "Emoji and media suggestions", "media")
         navRow("🔎", "Search", "Keyboard search availability and options", "search")
         section("PRIVACY & MORE")
@@ -592,6 +595,82 @@ class KeyboardSettingsActivity : Activity() {
         }
         addCard(add)
         infoCard("How it works", "Your personal words are included in matching suggestions when Personal dictionary suggestions is enabled. They stay on this device and are not used for automatic correction.")
+    }
+
+    private fun buildTextShortcuts() {
+        section("CUSTOM SHORTCUTS", "Type a short code followed by Space to insert its full phrase.")
+        val shortcuts = prefs.getStringSet("text_shortcuts", emptySet())
+            ?.toSortedSet().orEmpty()
+        if (shortcuts.isEmpty()) {
+            infoCard("No shortcuts yet", "Example: brb = be right back")
+        } else {
+            shortcuts.forEach { entry ->
+                val row = LinearLayout(this).apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                    background = rounded(surface)
+                    setPadding(dp(14), dp(12), dp(12), dp(12))
+                }
+                row.addView(TextView(this).apply {
+                    text = entry.replaceFirst("=", "  →  ")
+                    textSize = 14f
+                    setTextColor(primary)
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                row.addView(TextView(this).apply {
+                    text = "Remove"
+                    setTextColor(accent)
+                    setPadding(dp(8), dp(8), dp(4), dp(8))
+                    setOnClickListener {
+                        val updated = prefs.getStringSet("text_shortcuts", emptySet())
+                            ?.toMutableSet() ?: mutableSetOf()
+                        updated.remove(entry)
+                        prefs.edit().putStringSet("text_shortcuts", updated).apply()
+                        renderPage("shortcuts", false)
+                    }
+                })
+                addCard(row)
+            }
+        }
+        val add = actionButton("+  Add shortcut")
+        add.setOnClickListener {
+            val fields = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+            }
+            val trigger = EditText(this).apply {
+                hint = "Shortcut (e.g. brb)"
+                singleLine = true
+                filters = arrayOf(InputFilter.LengthFilter(20))
+            }
+            val expansion = EditText(this).apply {
+                hint = "Full phrase (e.g. be right back)"
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                minLines = 2
+                filters = arrayOf(InputFilter.LengthFilter(160))
+            }
+            fields.addView(trigger)
+            fields.addView(expansion)
+            AlertDialog.Builder(this)
+                .setTitle("Add text shortcut")
+                .setView(fields)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Save") { _, _ ->
+                    val key = trigger.text.toString().trim().lowercase()
+                    val phrase = expansion.text.toString().trim()
+                    if (key.isNotBlank() && key.all { it.isLetterOrDigit() } &&
+                        phrase.isNotBlank() && !phrase.contains("=")) {
+                        val updated = prefs.getStringSet("text_shortcuts", emptySet())
+                            ?.toMutableSet() ?: mutableSetOf()
+                        updated.removeAll { it.substringBefore("=").equals(key, true) }
+                        updated.add("$key=$phrase")
+                        prefs.edit().putStringSet("text_shortcuts", updated).apply()
+                        renderPage("shortcuts", false)
+                    } else {
+                        Toast.makeText(this, "Enter a valid shortcut and phrase", Toast.LENGTH_SHORT).show()
+                    }
+                }.show()
+        }
+        addCard(add)
+        infoCard("Privacy", "Shortcuts are stored locally and are not uploaded. They are disabled in sensitive password fields.")
     }
 
     private fun buildLayout() {

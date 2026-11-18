@@ -78,6 +78,21 @@ class RomanKeyboardService : InputMethodService() {
             clipboardManager?.addPrimaryClipChangedListener(it)
         }
         updateAutoCapitalization()
+        if (keyboardRoot != null) renderKeyboard()
+    }
+
+    // Keep password content out of suggestions, correction, clipboard history and dictation.
+    private fun isSensitiveInput(): Boolean {
+        val inputType = currentInputEditorInfo?.inputType ?: return false
+        val inputClass = inputType and EditorInfo.TYPE_MASK_CLASS
+        val variation = inputType and EditorInfo.TYPE_MASK_VARIATION
+        return when (inputClass) {
+            EditorInfo.TYPE_CLASS_TEXT -> variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
+                variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD
+            EditorInfo.TYPE_CLASS_NUMBER -> variation == EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD
+            else -> false
+        }
     }
 
     private fun updateAutoCapitalization() {
@@ -115,6 +130,7 @@ class RomanKeyboardService : InputMethodService() {
     }
 
     private fun captureClipboardText() {
+        if (isSensitiveInput()) return
         if (!getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
                 .getBoolean("clipboard_history_enabled", false)) {
             return
@@ -172,16 +188,22 @@ class RomanKeyboardService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        toolbar.addView(toolButton("▤", 0.9f) {
-            showingClipboardHistory = !showingClipboardHistory
-            renderKeyboard()
-        })
+        if (!isSensitiveInput()) {
+            toolbar.addView(toolButton("▤", 0.9f) {
+                showingClipboardHistory = !showingClipboardHistory
+                renderKeyboard()
+            })
+        } else {
+            showingClipboardHistory = false
+        }
         toolbar.addView(toolButton("☺", 0.8f) {
             showEmojiPicker()
         })
 
         val mic = toolButton("🎙", 1.1f) {}
-        mic.contentDescription = "Hold to dictate in Telugu"
+        mic.contentDescription = if (isSensitiveInput()) "Voice typing unavailable in password fields" else "Hold to dictate in Telugu"
+        mic.isEnabled = !isSensitiveInput()
+        mic.alpha = if (isSensitiveInput()) 0.45f else 1f
         mic.setOnTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
@@ -218,8 +240,14 @@ class RomanKeyboardService : InputMethodService() {
             return
         }
 
-        if (preferences.getBoolean("suggestions_enabled", true)) {
+        val editorInputType = currentInputEditorInfo?.inputType ?: 0
+        val editorDisablesSuggestions =
+            (editorInputType and EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0
+        if (preferences.getBoolean("suggestions_enabled", true) &&
+            !isSensitiveInput() && !editorDisablesSuggestions) {
             addSuggestionStrip(root)
+        } else {
+            suggestionRow = null
         }
         if (preferences.getBoolean("number_row_enabled", true)) {
             addRow(root, "1234567890", 1f)
@@ -383,6 +411,10 @@ class RomanKeyboardService : InputMethodService() {
 
     private fun commitSpaceWithOptionalCorrection() {
         val connection = currentInputConnection ?: return
+        if (isSensitiveInput()) {
+            connection.commitText(" ", 1)
+            return
+        }
         val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         val before = connection.getTextBeforeCursor(48, 0)?.toString().orEmpty()
         val word = before.takeLastWhile { it.isLetter() }
@@ -555,6 +587,9 @@ class RomanKeyboardService : InputMethodService() {
     private fun updateSuggestionStrip() {
         val row = suggestionRow ?: return
         row.removeAllViews()
+        val inputType = currentInputEditorInfo?.inputType ?: 0
+        if (isSensitiveInput() ||
+            (inputType and EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0) return
 
         val beforeCursor = currentInputConnection
             ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
@@ -894,6 +929,10 @@ class RomanKeyboardService : InputMethodService() {
     }
 
     private fun startVoice() {
+        if (isSensitiveInput()) {
+            Toast.makeText(this, "Voice typing is disabled in password fields", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Allow microphone permission in the app first", Toast.LENGTH_LONG).show()

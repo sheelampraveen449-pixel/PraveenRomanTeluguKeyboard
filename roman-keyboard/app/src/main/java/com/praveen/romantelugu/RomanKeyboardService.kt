@@ -433,7 +433,12 @@ class RomanKeyboardService : InputMethodService() {
             "cant" to "can't",
             "im" to "I'm"
         )
-        val corrected = if (prefs.getBoolean("basic_autocorrect_enabled", false)) {
+        val personalWordSet = prefs.getStringSet("personal_dictionary", emptySet())
+            ?.map { it.lowercase() }?.toSet().orEmpty()
+        val corrected = if (
+            prefs.getBoolean("basic_autocorrect_enabled", false) &&
+            word.lowercase() !in personalWordSet
+        ) {
             corrections[word.lowercase()]
         } else null
 
@@ -603,8 +608,14 @@ class RomanKeyboardService : InputMethodService() {
             .trimEnd().takeLastWhile { it.isLetter() }.lowercase()
 
         val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        // Copy and normalize saved words before ranking suggestions.
         val personalWords = if (prefs.getBoolean("personal_dictionary_suggestions", true)) {
-            prefs.getStringSet("personal_dictionary", emptySet())?.toList().orEmpty()
+            prefs.getStringSet("personal_dictionary", emptySet())
+                ?.map { it.trim() }
+                ?.filter { it.isNotBlank() }
+                ?.distinctBy { it.lowercase() }
+                ?.sortedBy { it.lowercase() }
+                .orEmpty()
         } else emptyList()
         val nextWords = mapOf(
             "nenu" to listOf("bagunnanu", "vastanu", "cheptanu"),
@@ -623,6 +634,7 @@ class RomanKeyboardService : InputMethodService() {
         } else {
             (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) })
+                .distinctBy { it.lowercase() }
         }
         val swipeMatches = pendingSwipeWord?.let { listOf(it) }.orEmpty()
         val matches = (swipeMatches + candidates).distinct().take(3)

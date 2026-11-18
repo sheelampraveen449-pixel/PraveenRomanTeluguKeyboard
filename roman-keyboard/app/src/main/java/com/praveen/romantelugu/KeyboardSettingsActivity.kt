@@ -122,6 +122,9 @@ class KeyboardSettingsActivity : Activity() {
             "clipboard" -> buildClipboard()
             "dictionary" -> buildDictionary()
             "layout" -> buildLayout()
+            "glide" -> buildGlide()
+            "media" -> buildMedia()
+            "advanced" -> buildAdvanced()
             "privacy" -> buildPrivacy()
             "about" -> buildAbout()
         }
@@ -142,6 +145,9 @@ class KeyboardSettingsActivity : Activity() {
         "clipboard" -> "Clipboard"
         "dictionary" -> "Dictionary"
         "layout" -> "Keyboard layout"
+        "glide" -> "Glide typing"
+        "media" -> "Emojis, stickers & GIFs"
+        "advanced" -> "Advanced settings"
         "privacy" -> "Privacy"
         "about" -> "About"
         else -> "Settings"
@@ -282,18 +288,21 @@ class KeyboardSettingsActivity : Activity() {
     }
 
     private fun buildHome() {
-        section("PERSONALIZE", "Make your keyboard feel right")
-        navRow("🌐", "Languages", "Roman Telugu and typing language", "languages")
-        navRow("⚙", "Preferences", "Sound, vibration and key behaviour", "preferences")
-        navRow("🎨", "Themes", "Choose your keyboard appearance", "themes")
-        section("TYPING")
-        navRow("✍", "Text correction", "Suggestions and word assistance", "correction")
+        section("LANGUAGES & LAYOUT")
+        navRow("🌐", "Languages", "Roman Telugu and English QWERTY", "languages")
+        navRow("⌨", "Preferences", "Keyboard behaviour, sound and vibration", "preferences")
+        navRow("🎨", "Theme", "Colours and keyboard appearance", "themes")
+        section("TEXT INPUT")
+        navRow("✍", "Text correction", "Suggestions, next words and correction", "correction")
+        navRow("〰", "Glide typing", "Swipe-to-type support status", "glide")
         navRow("🎙", "Voice typing", "Telugu speech recognition", "voice")
-        navRow("📋", "Clipboard", "History and saved copied text", "clipboard")
-        navRow("📖", "Dictionary", "Your personal Roman Telugu words", "dictionary")
-        navRow("⌨", "Keyboard height and layout", "Key size and number row", "layout")
-        section("INFORMATION")
-        navRow("🔒", "Privacy", "How keyboard data is handled", "privacy")
+        section("PERSONAL CONTENT")
+        navRow("📋", "Clipboard", "On-device copied text history", "clipboard")
+        navRow("📖", "Dictionary", "Personal Roman Telugu words", "dictionary")
+        navRow("😊", "Emojis, stickers & GIFs", "Emoji picker and media feature status", "media")
+        section("MORE")
+        navRow("🔒", "Privacy", "Permissions and local data", "privacy")
+        navRow("⚙", "Advanced settings", "Additional keyboard controls", "advanced")
         navRow("ⓘ", "About", "App information and version", "about")
     }
 
@@ -542,6 +551,30 @@ class KeyboardSettingsActivity : Activity() {
         infoCard("Clipboard", "Clipboard history is optional and stored locally. You can disable it or clear saved entries at any time.")
         infoCard("Voice typing", "Voice recognition uses the Android speech-recognition service. Speech processing may be handled by that service according to its own privacy policy.")
         infoCard("Permissions", "This app requests microphone permission for voice typing. It does not require overlay or accessibility permissions.")
+    }
+
+    private fun buildGlide() {
+        section("GLIDE TYPING")
+        infoCard("Not enabled yet", "Swipe-to-type needs a gesture path recognizer and a validated Roman Telugu word model. It is not active in this version, so normal key tapping remains unchanged.")
+        infoCard("Planned behaviour", "Trace across letters without lifting your finger, preview the predicted word, and allow correction from the suggestion strip.")
+    }
+
+    private fun buildMedia() {
+        section("EMOJIS")
+        infoCard("Emoji picker", "The keyboard currently includes a basic emoji picker and remembers recently used emoji on this device.")
+        section("STICKERS & GIFS")
+        infoCard("Not available yet", "Sticker and GIF search requires a media catalogue and network access. It is not enabled, and this keyboard does not request internet permission.")
+    }
+
+    private fun buildAdvanced() {
+        section("KEYBOARD CONTROLS")
+        switchRow("Automatic sentence capitalisation", "Start sentences with a capital letter where the editor requests it", "auto_capitalization_enabled", true)
+        switchRow("Number row", "Keep a dedicated number row above letters", "number_row_enabled", true)
+        switchRow("Show word suggestions", "Display Roman Telugu suggestions above the keys", "suggestions_enabled", true)
+        section("PRIVACY")
+        infoCard("Local-first design", "Personal dictionary and clipboard history are stored locally. Voice recognition is handled by the Android speech service when you use the microphone.")
+        section("FEATURE STATUS")
+        infoCard("Advanced features in development", "Swipe typing, downloadable language packs, cloud sync and sticker/GIF search are not currently active.")
     }
 
     private fun buildAbout() {

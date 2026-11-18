@@ -498,24 +498,28 @@ class KeyboardSettingsActivity : Activity() {
                 hint = "Enter a Roman Telugu word"
                 inputType = InputType.TYPE_CLASS_TEXT
                 setSingleLine(true)
+                filters = arrayOf(InputFilter.LengthFilter(40))
             }
             AlertDialog.Builder(this)
                 .setTitle("Add personal word")
                 .setView(input)
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Save") { _, _ ->
-                    val word = input.text.toString().trim()
-                    if (word.isNotEmpty()) {
+                    val word = input.text.toString().trim().lowercase()
+                    if (word.isNotEmpty() && word.all { it.isLetter() }) {
                         val updated = prefs.getStringSet("personal_dictionary", emptySet())
                             ?.toMutableSet() ?: mutableSetOf()
+                        updated.removeAll { it.equals(word, ignoreCase = true) }
                         updated.add(word)
                         prefs.edit().putStringSet("personal_dictionary", updated).apply()
                         renderPage("dictionary", false)
+                    } else if (word.isNotEmpty()) {
+                        Toast.makeText(this, "Use letters only", Toast.LENGTH_SHORT).show()
                     }
                 }.show()
         }
         addCard(add)
-        infoCard("Current scope", "Personal words are saved and managed here. They are not yet merged into the suggestion engine.")
+        infoCard("How it works", "Your personal words are included in matching suggestions when Personal dictionary suggestions is enabled. They stay on this device and are not used for automatic correction.")
     }
 
     private fun buildLayout() {

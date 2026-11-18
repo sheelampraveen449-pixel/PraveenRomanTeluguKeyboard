@@ -184,6 +184,24 @@ class RomanKeyboardService : InputMethodService() {
         }
     }
 
+    // Keep suggestions in sync when the cursor or selection moves in the editor.
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart, oldSelEnd, newSelStart, newSelEnd,
+            candidatesStart, candidatesEnd
+        )
+        if (newSelStart == newSelEnd) {
+            updateSuggestionStrip()
+        }
+    }
+
     override fun onFinishInputView(finishingInput: Boolean) {
         clipboardListener?.let {
             clipboardManager?.removePrimaryClipChangedListener(it)

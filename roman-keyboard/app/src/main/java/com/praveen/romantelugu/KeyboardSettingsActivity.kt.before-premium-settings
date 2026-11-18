@@ -1,0 +1,143 @@
+package com.praveen.romantelugu
+
+import android.app.Activity
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.widget.Button
+import android.widget.CheckBox
+import android.app.AlertDialog
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import android.content.SharedPreferences
+
+class KeyboardSettingsActivity : Activity() {
+
+    private lateinit var prefs: SharedPreferences
+    private lateinit var status: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+
+        val page = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 28, 24, 28)
+            setBackgroundColor(Color.rgb(245, 247, 250))
+        }
+
+        page.addView(TextView(this).apply {
+            text = "Keyboard Settings"
+            textSize = 27f
+            setTextColor(Color.rgb(25, 35, 55))
+            setPadding(0, 0, 0, 8)
+        })
+
+        page.addView(TextView(this).apply {
+            text = "Personalize your Roman Telugu keyboard"
+            textSize = 15f
+            setTextColor(Color.DKGRAY)
+            setPadding(0, 0, 0, 24)
+        })
+
+        page.addView(section("Appearance"))
+
+        status = TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.DKGRAY)
+            setPadding(0, 8, 0, 12)
+        }
+        page.addView(status)
+
+        addThemeButton(page, "Light theme", "light")
+        addThemeButton(page, "Dark theme", "dark")
+        addThemeButton(page, "Blue theme", "blue")
+
+        page.addView(section("Keyboard features"))
+        page.addView(info("Roman Telugu conversion", "Preserves your existing Telugu-to-Roman converter."))
+        page.addView(info("Voice typing", "Uses Android speech recognition. Microphone permission is required."))
+
+        page.addView(section("Clipboard privacy"))
+
+        page.addView(info(
+            "On-device clipboard history",
+            "Clipboard entries are stored locally on this device. They are not uploaded by this feature."
+        ))
+
+        page.addView(CheckBox(this).apply {
+            text = "Enable clipboard history"
+            textSize = 16f
+            isChecked = prefs.getBoolean("clipboard_history_enabled", false)
+            setOnCheckedChangeListener { _, enabled ->
+                prefs.edit()
+                    .putBoolean("clipboard_history_enabled", enabled)
+                    .apply()
+            }
+        })
+
+        page.addView(Button(this).apply {
+            text = "Clear all clipboard data"
+            setOnClickListener {
+                AlertDialog.Builder(this@KeyboardSettingsActivity)
+                    .setTitle("Clear clipboard history?")
+                    .setMessage("This permanently deletes all saved clipboard entries, including pinned items.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Clear") { _, _ ->
+                        ClipboardHistoryStore(this@KeyboardSettingsActivity).clearAll()
+                    }
+                    .show()
+            }
+        })
+
+        page.addView(info(
+            "Privacy note",
+            "When disabled, new clipboard entries are not saved. Previously saved entries remain until you clear them."
+        ))
+
+        page.addView(Button(this).apply {
+            text = "Back to keyboard"
+            textSize = 16f
+            setOnClickListener { finish() }
+        })
+
+        val scroll = ScrollView(this)
+        scroll.addView(page)
+        setContentView(scroll)
+        updateStatus()
+    }
+
+    private fun section(name: String) = TextView(this).apply {
+        text = name
+        textSize = 19f
+        setTextColor(Color.rgb(35, 65, 110))
+        setPadding(0, 20, 0, 8)
+    }
+
+    private fun info(title: String, description: String) =
+        TextView(this).apply {
+            text = "$title\n$description"
+            textSize = 15f
+            setTextColor(Color.DKGRAY)
+            setPadding(0, 12, 0, 12)
+        }
+
+    private fun addThemeButton(
+        parent: LinearLayout,
+        title: String,
+        value: String
+    ) {
+        parent.addView(Button(this).apply {
+            text = title
+            textSize = 15f
+            setOnClickListener {
+                prefs.edit().putString("theme", value).apply()
+                updateStatus()
+            }
+        })
+    }
+
+    private fun updateStatus() {
+        status.text = "Current theme: ${prefs.getString("theme", "light")}"
+    }
+}

@@ -1,0 +1,235 @@
+package com.praveen.romantelugu
+
+import android.inputmethodservice.InputMethodService
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.view.View
+import android.view.inputmethod.InputConnection
+import android.graphics.Color
+import android.graphics.Typeface
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import java.util.Locale
+
+class RomanKeyboardService : InputMethodService() {
+
+    private var recognizer: SpeechRecognizer? = null
+
+    override fun onCreateInputView(): View {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(4, 6, 4, 8)
+            setBackgroundColor(Color.rgb(225, 229, 235))
+        }
+
+        val toolbar = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+        }
+
+        val micKey = key("Hold 🎙", 1.5f) {}
+        micKey.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    micKey.text = "Listening..."
+                    startVoice()
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    micKey.text = "Hold 🎙"
+                    stopVoice()
+                    true
+                }
+                else -> true
+            }
+        }
+        toolbar.addView(micKey)
+
+        toolbar.addView(key("⌫", 1f) {
+            currentInputConnection?.deleteSurroundingText(1, 0)
+        })
+
+        toolbar.addView(key("↵", 1f) {
+            currentInputConnection?.commitText("\n", 1)
+        })
+
+        root.addView(toolbar)
+
+        val rows = listOf(
+            "qwertyuiop",
+            "asdfghjkl",
+            "zxcvbnm"
+        )
+
+        rows.forEach { letters ->
+            val row = LinearLayout(this).apply {
+                gravity = Gravity.CENTER
+            }
+            letters.forEach { letter ->
+                row.addView(key(letter.toString(), 1f) {
+                    currentInputConnection?.commitText(letter.toString(), 1)
+                })
+            }
+            root.addView(row)
+        }
+
+        val bottom = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+        }
+
+        bottom.addView(key("?123", 1f) {
+            currentInputConnection?.commitText("123", 1)
+        })
+        bottom.addView(key(",", 0.7f) {
+            currentInputConnection?.commitText(",", 1)
+        })
+        bottom.addView(key("English / Telugu", 3f) {
+            currentInputConnection?.commitText(" ", 1)
+        })
+        bottom.addView(key(".", 0.7f) {
+            currentInputConnection?.commitText(".", 1)
+        })
+
+        root.addView(bottom)
+        return root
+    }
+
+    private fun key(label: String, weight: Float, action: () -> Unit): TextView {
+        return TextView(this).apply {
+            text = label
+            textSize = 17f
+            gravity = Gravity.CENTER
+            setTextColor(Color.BLACK)
+            typeface = Typeface.DEFAULT_BOLD
+            setBackgroundColor(Color.WHITE)
+            val params = LinearLayout.LayoutParams(0, dp(48), weight)
+            params.setMargins(2, 3, 2, 3)
+            layoutParams = params
+            setOnClickListener { action() }
+        }
+    }
+
+    private fun dp(value: Int) =
+        (value * resources.displayMetrics.density).toInt()
+
+    private fun startVoice() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Open the app and allow microphone permission", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, "Speech recognition is unavailable on this device", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        recognizer?.destroy()
+        recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+
+        recognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                Toast.makeText(this@RomanKeyboardService, "Speak Telugu now", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onResults(results: Bundle?) {
+                val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull().orEmpty()
+                if (spoken.isNotBlank()) {
+                    currentInputConnection?.commitText(TeluguRomanizer.convert(spoken), 1)
+                }
+            }
+
+            override fun onError(error: Int) {
+                Toast.makeText(this@RomanKeyboardService, "Voice recognition error: $error", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "te-IN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "te-IN")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 20000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 20000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 20000L)
+        }
+
+        recognizer?.startListening(intent)
+    }
+
+    private fun stopVoice() {
+        try {
+            recognizer?.stopListening()
+        } catch (_: Exception) {
+        }
+    }
+
+    override fun onDestroy() {
+        recognizer?.destroy()
+        recognizer = null
+        super.onDestroy()
+    }
+}
+
+object TeluguRomanizer {
+    private val vowels = mapOf(
+        'అ' to "a", 'ఆ' to "aa", 'ఇ' to "i", 'ఈ' to "ee",
+        'ఉ' to "u", 'ఊ' to "oo", 'ఋ' to "ru", 'ఎ' to "e",
+        'ఏ' to "ee", 'ఐ' to "ai", 'ఒ' to "o", 'ఓ' to "oo",
+        'ఔ' to "au"
+    )
+
+    private val consonants = mapOf(
+        'క' to "k", 'ఖ' to "kh", 'గ' to "g", 'ఘ' to "gh", 'ఙ' to "ng",
+        'చ' to "ch", 'ఛ' to "chh", 'జ' to "j", 'ఝ' to "jh", 'ఞ' to "ny",
+        'ట' to "t", 'ఠ' to "th", 'డ' to "d", 'ఢ' to "dh", 'ణ' to "n",
+        'త' to "th", 'థ' to "th", 'ద' to "d", 'ధ' to "dh", 'న' to "n",
+        'ప' to "p", 'ఫ' to "ph", 'బ' to "b", 'భ' to "bh", 'మ' to "m",
+        'య' to "y", 'ర' to "r", 'ల' to "l", 'వ' to "v",
+        'శ' to "sh", 'ష' to "sh", 'స' to "s", 'హ' to "h",
+        'ళ' to "l", 'ఱ' to "r"
+    )
+
+    private val signs = mapOf(
+        'ా' to "aa", 'ి' to "i", 'ీ' to "ee", 'ు' to "u",
+        'ూ' to "oo", 'ృ' to "ru", 'ె' to "e", 'ే' to "ee",
+        'ై' to "ai", 'ొ' to "o", 'ో' to "oo", 'ౌ' to "au"
+    )
+
+    fun convert(input: String): String {
+        val out = StringBuilder()
+        input.forEach { c ->
+            when {
+                vowels.containsKey(c) -> out.append(vowels[c])
+                consonants.containsKey(c) -> out.append(consonants[c]).append("a")
+                signs.containsKey(c) -> {
+                    if (out.endsWith("a")) out.deleteCharAt(out.length - 1)
+                    out.append(signs[c])
+                }
+                c == '్' -> {
+                    if (out.endsWith("a")) out.deleteCharAt(out.length - 1)
+                }
+                c == 'ం' -> out.append("m")
+                c == 'ః' -> out.append("h")
+                c.isWhitespace() || c.isDigit() || c in ".,!?;:-" -> out.append(c)
+                else -> out.append(c)
+            }
+        }
+        return out.toString()
+    }
+}

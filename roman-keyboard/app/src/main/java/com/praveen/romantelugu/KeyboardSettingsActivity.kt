@@ -1,0 +1,508 @@
+package com.praveen.romantelugu
+
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.animation.AnimationUtils
+import android.widget.*
+import android.text.InputType
+
+class KeyboardSettingsActivity : Activity() {
+
+    private lateinit var prefs: SharedPreferences
+    private lateinit var content: LinearLayout
+    private lateinit var pageTitle: TextView
+    private var currentPage = "home"
+
+    private val dark: Boolean
+        get() = prefs.getString("theme", "light") == "dark"
+
+    private val bg: Int
+        get() = if (dark) Color.rgb(19, 21, 27) else Color.rgb(247, 248, 252)
+
+    private val surface: Int
+        get() = if (dark) Color.rgb(36, 39, 47) else Color.WHITE
+
+    private val primary: Int
+        get() = if (dark) Color.WHITE else Color.rgb(28, 32, 43)
+
+    private val secondary: Int
+        get() = if (dark) Color.rgb(180, 185, 197) else Color.rgb(105, 111, 124)
+
+    private val accent = Color.rgb(75, 105, 190)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        renderPage("home", false)
+    }
+
+    private fun dp(value: Int) =
+        (value * resources.displayMetrics.density).toInt()
+
+    private fun rounded(color: Int, radius: Int = 18): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
+
+    private fun renderPage(page: String, animate: Boolean = true) {
+        currentPage = page
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+        }
+
+        val toolbar = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(12), dp(18), dp(10))
+        }
+
+        val back = TextView(this).apply {
+            text = if (page == "home") "‹" else "‹"
+            textSize = 34f
+            gravity = Gravity.CENTER
+            setTextColor(primary)
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            setOnClickListener {
+                if (currentPage != "home") renderPage("home")
+                else finish()
+            }
+        }
+        toolbar.addView(back)
+
+        val heading = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        pageTitle = TextView(this).apply {
+            text = if (page == "home") "Settings" else pageName(page)
+            textSize = 22f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(primary)
+        }
+        heading.addView(pageTitle)
+        toolbar.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
+
+        root.addView(toolbar)
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setPadding(dp(18), dp(4), dp(18), dp(28))
+        }
+
+        content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
+
+        when (page) {
+            "home" -> buildHome()
+            "languages" -> buildLanguages()
+            "preferences" -> buildPreferences()
+            "themes" -> buildThemes()
+            "correction" -> buildCorrection()
+            "voice" -> buildVoice()
+            "clipboard" -> buildClipboard()
+            "dictionary" -> buildDictionary()
+            "layout" -> buildLayout()
+            "privacy" -> buildPrivacy()
+            "about" -> buildAbout()
+        }
+
+        if (animate) {
+            root.startAnimation(
+                AnimationUtils.loadAnimation(this, android.R.anim.fade_in)
+            )
+        }
+    }
+
+    private fun pageName(page: String) = when (page) {
+        "languages" -> "Languages"
+        "preferences" -> "Preferences"
+        "themes" -> "Themes"
+        "correction" -> "Text correction"
+        "voice" -> "Voice typing"
+        "clipboard" -> "Clipboard"
+        "dictionary" -> "Dictionary"
+        "layout" -> "Keyboard layout"
+        "privacy" -> "Privacy"
+        "about" -> "About"
+        else -> "Settings"
+    }
+
+    private fun section(title: String, description: String? = null) {
+        val block = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4), dp(20), dp(4), dp(10))
+        }
+        block.addView(TextView(this).apply {
+            text = title
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(accent)
+        })
+        if (description != null) {
+            block.addView(TextView(this).apply {
+                text = description
+                textSize = 13f
+                setTextColor(secondary)
+                setPadding(0, dp(4), 0, 0)
+            })
+        }
+        content.addView(block)
+    }
+
+    private fun infoCard(title: String, description: String) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(surface)
+            setPadding(dp(17), dp(15), dp(17), dp(15))
+        }
+        card.addView(TextView(this).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(primary)
+        })
+        card.addView(TextView(this).apply {
+            text = description
+            textSize = 13f
+            setTextColor(secondary)
+            setPadding(0, dp(6), 0, 0)
+        })
+        addCard(card)
+    }
+
+    private fun addCard(view: View) {
+        val params = LinearLayout.LayoutParams(-1, -2)
+        params.bottomMargin = dp(9)
+        content.addView(view, params)
+    }
+
+    private fun navRow(
+        icon: String,
+        title: String,
+        description: String,
+        destination: String
+    ) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(surface)
+            setPadding(dp(14), dp(13), dp(12), dp(13))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { renderPage(destination) }
+        }
+
+        card.addView(TextView(this).apply {
+            text = icon
+            textSize = 23f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(dp(42), dp(46))
+        })
+
+        val labels = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), 0, dp(4), 0)
+        }
+        labels.addView(TextView(this).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(primary)
+        })
+        labels.addView(TextView(this).apply {
+            text = description
+            textSize = 12f
+            setTextColor(secondary)
+            setPadding(0, dp(3), 0, 0)
+        })
+        card.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+        card.addView(TextView(this).apply {
+            text = "›"
+            textSize = 27f
+            setTextColor(secondary)
+        })
+        addCard(card)
+    }
+
+    private fun switchRow(
+        title: String,
+        description: String,
+        key: String,
+        default: Boolean = false
+    ) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(surface)
+            setPadding(dp(16), dp(12), dp(12), dp(12))
+        }
+        val labels = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        labels.addView(TextView(this).apply {
+            text = title
+            textSize = 15f
+            setTextColor(primary)
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        labels.addView(TextView(this).apply {
+            text = description
+            textSize = 12f
+            setTextColor(secondary)
+            setPadding(0, dp(4), 0, 0)
+        })
+        row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(Switch(this).apply {
+            isChecked = prefs.getBoolean(key, default)
+            setOnCheckedChangeListener { _, checked ->
+                prefs.edit().putBoolean(key, checked).apply()
+            }
+        })
+        addCard(row)
+    }
+
+    private fun buildHome() {
+        section("PERSONALIZE", "Make your keyboard feel right")
+        navRow("🌐", "Languages", "Roman Telugu and typing language", "languages")
+        navRow("⚙", "Preferences", "Sound, vibration and key behaviour", "preferences")
+        navRow("🎨", "Themes", "Choose your keyboard appearance", "themes")
+        section("TYPING")
+        navRow("✍", "Text correction", "Suggestions and word assistance", "correction")
+        navRow("🎙", "Voice typing", "Telugu speech recognition", "voice")
+        navRow("📋", "Clipboard", "History and saved copied text", "clipboard")
+        navRow("📖", "Dictionary", "Your personal Roman Telugu words", "dictionary")
+        navRow("⌨", "Keyboard height and layout", "Key size and number row", "layout")
+        section("INFORMATION")
+        navRow("🔒", "Privacy", "How keyboard data is handled", "privacy")
+        navRow("ⓘ", "About", "App information and version", "about")
+    }
+
+    private fun buildLanguages() {
+        section("ACTIVE LANGUAGE")
+        infoCard("Roman Telugu", "Type Telugu using English letters. For example, nenu and meeru ela unnaru. This is the current keyboard mode.")
+        infoCard("English QWERTY", "The keyboard uses the English letter layout for Roman Telugu typing.")
+        infoCard("Voice input", "Telugu speech is recognized using the Telugu (India) speech-recognition locale and converted to Roman letters.")
+        infoCard("Language availability", "Additional language layouts and downloadable language packs are not implemented yet.")
+    }
+
+    private fun buildPreferences() {
+        section("KEY FEEDBACK")
+        switchRow("Key sound", "Play a subtle sound when a key is tapped", "key_sound_enabled", false)
+        switchRow("Vibration", "Short haptic feedback on key taps", "key_vibration_enabled", false)
+        section("KEYBOARD")
+        switchRow("Number row", "Show numbers above the letter keys", "number_row_enabled", true)
+        infoCard("Tip", "You can change the keyboard height and layout separately.")
+    }
+
+    private fun buildThemes() {
+        section("CHOOSE A THEME", "The selected theme is shared by the keyboard and settings.")
+        themeRow("Light", "light", "Bright keys with a soft background")
+        themeRow("Dark", "dark", "Dark surfaces for low-light typing")
+        themeRow("Blue", "blue", "A cool blue keyboard appearance")
+    }
+
+    private fun themeRow(title: String, value: String, description: String) {
+        val selected = prefs.getString("theme", "light") == value
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(surface)
+            setPadding(dp(16), dp(17), dp(16), dp(17))
+        }
+        val labels = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        labels.addView(TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTextColor(primary)
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        labels.addView(TextView(this).apply {
+            text = description
+            textSize = 12f
+            setTextColor(secondary)
+            setPadding(0, dp(4), 0, 0)
+        })
+        card.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+        card.addView(TextView(this).apply {
+            text = if (selected) "✓" else "○"
+            textSize = 23f
+            setTextColor(accent)
+        })
+        card.setOnClickListener {
+            prefs.edit().putString("theme", value).apply()
+            renderPage("themes", false)
+        }
+        addCard(card)
+    }
+
+    private fun buildCorrection() {
+        section("SUGGESTIONS")
+        switchRow("Roman Telugu suggestions", "Show matching Roman Telugu words above the keyboard", "suggestions_enabled", true)
+        infoCard("How suggestions work", "Suggestions currently use the built-in offline Roman Telugu word list. Tapping a suggestion replaces the current word.")
+        infoCard("Not available yet", "Automatic next-word prediction, autocorrect and swipe typing are not implemented in this build.")
+        navRow("📖", "Personal dictionary", "Add and manage your own words", "dictionary")
+    }
+
+    private fun buildVoice() {
+        section("TELUGU SPEECH")
+        infoCard("Voice typing language", "Telugu (India) · te-IN")
+        infoCard("How it works", "Press and hold the microphone key while speaking Telugu. The recognized Telugu text is converted into Roman letters.")
+        val granted = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        infoCard("Microphone permission", if (granted) "Permission is currently granted." else "Permission is not granted. Open the app setup screen and allow microphone access to use voice typing.")
+        infoCard("Speech recognition", "Recognition is provided by the Android speech-recognition service. Availability can depend on the device and installed speech services.")
+    }
+
+    private fun buildClipboard() {
+        section("CLIPBOARD HISTORY")
+        switchRow("Enable clipboard history", "Save copied text locally while the keyboard is active", "clipboard_history_enabled", false)
+        infoCard("On-device storage", "Clipboard history is stored locally by this app. Android may restrict background clipboard access.")
+        val clear = actionButton("Clear all clipboard data")
+        clear.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Clear clipboard history?")
+                .setMessage("This deletes all saved entries, including pinned items.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Clear") { _, _ ->
+                    ClipboardHistoryStore(this).clearAll()
+                    Toast.makeText(this, "Clipboard history cleared", Toast.LENGTH_SHORT).show()
+                }.show()
+        }
+        addCard(clear)
+    }
+
+    private fun buildDictionary() {
+        section("PERSONAL WORDS", "Your own words are stored on this device.")
+        val words = prefs.getStringSet("personal_dictionary", emptySet())
+            ?.toSortedSet().orEmpty()
+        if (words.isEmpty()) {
+            infoCard("No personal words yet", "Add words you want to keep in your personal Roman Telugu dictionary.")
+        } else {
+            words.forEach { word ->
+                val row = LinearLayout(this).apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                    background = rounded(surface)
+                    setPadding(dp(16), dp(12), dp(12), dp(12))
+                }
+                row.addView(TextView(this).apply {
+                    text = word
+                    textSize = 16f
+                    setTextColor(primary)
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                row.addView(TextView(this).apply {
+                    text = "Remove"
+                    textSize = 13f
+                    setTextColor(accent)
+                    setPadding(dp(10), dp(8), dp(8), dp(8))
+                    setOnClickListener {
+                        val updated = prefs.getStringSet("personal_dictionary", emptySet())
+                            ?.toMutableSet() ?: mutableSetOf()
+                        updated.remove(word)
+                        prefs.edit().putStringSet("personal_dictionary", updated).apply()
+                        renderPage("dictionary", false)
+                    }
+                })
+                addCard(row)
+            }
+        }
+        val add = actionButton("+  Add a word")
+        add.setOnClickListener {
+            val input = EditText(this).apply {
+                hint = "Enter a Roman Telugu word"
+                inputType = InputType.TYPE_CLASS_TEXT
+                setSingleLine(true)
+            }
+            AlertDialog.Builder(this)
+                .setTitle("Add personal word")
+                .setView(input)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Save") { _, _ ->
+                    val word = input.text.toString().trim()
+                    if (word.isNotEmpty()) {
+                        val updated = prefs.getStringSet("personal_dictionary", emptySet())
+                            ?.toMutableSet() ?: mutableSetOf()
+                        updated.add(word)
+                        prefs.edit().putStringSet("personal_dictionary", updated).apply()
+                        renderPage("dictionary", false)
+                    }
+                }.show()
+        }
+        addCard(add)
+        infoCard("Current scope", "Personal words are saved and managed here. They are not yet merged into the suggestion engine.")
+    }
+
+    private fun buildLayout() {
+        section("KEY SIZE")
+        val current = prefs.getInt("key_height_dp", 47).coerceIn(40, 64)
+        val valueLabel = TextView(this).apply {
+            text = "Key height: ${current} dp"
+            textSize = 15f
+            setTextColor(primary)
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+        }
+        addCard(valueLabel)
+        val seek = SeekBar(this).apply {
+            max = 24
+            progress = current - 40
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val height = progress + 40
+                    valueLabel.text = "Key height: $height dp"
+                    prefs.edit().putInt("key_height_dp", height).apply()
+                }
+                override fun onStartTrackingTouch(bar: SeekBar?) {}
+                override fun onStopTrackingTouch(bar: SeekBar?) {}
+            })
+        }
+        addCard(seek)
+        section("LAYOUT")
+        switchRow("Number row", "Display the number keys above letters", "number_row_enabled", true)
+        infoCard("Apply changes", "Close and reopen the keyboard after changing its height or layout.")
+    }
+
+    private fun buildPrivacy() {
+        section("YOUR DATA")
+        infoCard("Roman Telugu typing", "Typed text is sent to the active app through Android's keyboard input connection.")
+        infoCard("Clipboard", "Clipboard history is optional and stored locally. You can disable it or clear saved entries at any time.")
+        infoCard("Voice typing", "Voice recognition uses the Android speech-recognition service. Speech processing may be handled by that service according to its own privacy policy.")
+        infoCard("Permissions", "This app requests microphone permission for voice typing. It does not require overlay or accessibility permissions.")
+    }
+
+    private fun buildAbout() {
+        section("ROMAN TELUGU KEYBOARD")
+        infoCard("Version 1.0", "A Roman Telugu keyboard with offline word suggestions and Telugu voice-to-Roman typing.")
+        infoCard("Built for", "Fast Roman Telugu typing using a familiar English QWERTY layout.")
+        infoCard("Project status", "This is an actively developed build. Some advanced features such as next-word prediction, glide typing and additional language packs are not available yet.")
+    }
+
+    private fun actionButton(label: String): Button =
+        Button(this).apply {
+            text = label
+            textSize = 14f
+            isAllCaps = false
+        }
+
+    override fun onBackPressed() {
+        if (currentPage != "home") renderPage("home")
+        else super.onBackPressed()
+    }
+}

@@ -1,0 +1,10 @@
+**/build/
+**/.gradle/
+**/local.properties
+**/.idea/
+*.apk
+*.aab
+*.jks
+*.keystore
+bolo_source/
+roman-keyboard-inspection.zip

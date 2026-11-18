@@ -264,6 +264,17 @@ class RomanKeyboardService : InputMethodService() {
         val preferences = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         val selectedTheme = preferences.getString("theme", "light")
         root.setPadding(dp(4), dp(4), dp(4), dp(5))
+        // Honour the keyboard-height preference by reserving enough vertical
+        // space for every weighted key row. Without this minimum, Android can
+        // compress the rows and make the bottom row overlap or become too small.
+        val configuredKeyHeight = preferences.getInt("key_height_dp", 42).coerceIn(38, 50)
+        val hasNumberRow = preferences.getBoolean("number_row_enabled", true)
+        val hasSuggestions = preferences.getBoolean("suggestions_enabled", true) && !isSensitiveInput()
+        val requiredKeyboardHeight = 44 +
+            (if (showingToolsPanel) 42 else 0) +
+            (if (hasSuggestions) 38 else 0) +
+            configuredKeyHeight * ((if (hasNumberRow) 1 else 0) + 4) + 12
+        root.minimumHeight = dp(requiredKeyboardHeight)
         root.setBackgroundColor(
             when (selectedTheme) {
                 "dark" -> Color.rgb(30, 33, 39)
@@ -1225,6 +1236,8 @@ class RomanKeyboardService : InputMethodService() {
                 selectedFont,
                 if (isActionKey) Typeface.BOLD else Typeface.NORMAL
             )
+            val configuredKeyHeight = keyPreferences.getInt("key_height_dp", 42).coerceIn(38, 50)
+            minimumHeight = dp(configuredKeyHeight)
             val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight)
             params.setMargins(dp(2), dp(2), dp(2), dp(2))
             layoutParams = params

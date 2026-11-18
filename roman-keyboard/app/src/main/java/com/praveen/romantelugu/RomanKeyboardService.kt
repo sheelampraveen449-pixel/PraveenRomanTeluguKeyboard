@@ -496,8 +496,9 @@ class RomanKeyboardService : InputMethodService() {
             .trimEnd().takeLastWhile { it.isLetter() }.lowercase()
 
         val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-        val personalWords = prefs.getStringSet("personal_dictionary", emptySet())
-            ?.toList().orEmpty()
+        val personalWords = if (prefs.getBoolean("personal_dictionary_suggestions", true)) {
+            prefs.getStringSet("personal_dictionary", emptySet())?.toList().orEmpty()
+        } else emptyList()
         val nextWords = mapOf(
             "nenu" to listOf("bagunnanu", "vastanu", "cheptanu"),
             "meeru" to listOf("ela", "ekkada", "vastunnara"),
@@ -508,7 +509,10 @@ class RomanKeyboardService : InputMethodService() {
             "ippudu" to listOf("cheppu", "randi", "chuddam")
         )
         val candidates = if (prefix.isBlank()) {
-            (nextWords[previousWord].orEmpty() + listOf("nenu", "meeru", "ela"))
+            val contextual = if (prefs.getBoolean("next_word_enabled", true)) {
+                nextWords[previousWord].orEmpty()
+            } else emptyList()
+            (contextual + listOf("nenu", "meeru", "ela"))
         } else {
             (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) })

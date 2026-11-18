@@ -497,6 +497,7 @@ class RomanKeyboardService : InputMethodService() {
         if (isSensitiveInput()) {
             connection.commitText(" ", 1)
             lastSpaceTapAt = 0L
+            updateSuggestionStrip()
             return
         }
 
@@ -508,6 +509,8 @@ class RomanKeyboardService : InputMethodService() {
             connection.deleteSurroundingTextInCodePoints(1, 0)
             connection.commitText(". ", 1)
             lastSpaceTapAt = 0L
+            updateSuggestionStrip()
+            updateAutoCapitalization()
             return
         }
         lastSpaceTapAt = now
@@ -544,6 +547,7 @@ class RomanKeyboardService : InputMethodService() {
         } else {
             connection.commitText(" ", 1)
         }
+        updateSuggestionStrip()
     }
 
     private fun deleteBackward() {

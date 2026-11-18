@@ -36,6 +36,19 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Verify requested Android permissions
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          manifest = ET.parse("roman-keyboard/app/src/main/AndroidManifest.xml").getroot()
+          android = "{http://schemas.android.com/apk/res/android}"
+          permissions = sorted(node.attrib.get(android + "name", "") for node in manifest.findall("uses-permission"))
+          expected = ["android.permission.RECORD_AUDIO"]
+          if permissions != expected:
+              raise SystemExit(f"Unexpected manifest permissions: {permissions}; expected: {expected}")
+          print("Permission check passed:", permissions)
+          PY
+
       - name: Build debug APK
         working-directory: roman-keyboard
         run: |

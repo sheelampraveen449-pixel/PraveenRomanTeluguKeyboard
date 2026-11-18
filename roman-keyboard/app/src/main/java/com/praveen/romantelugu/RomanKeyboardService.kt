@@ -693,10 +693,14 @@ class RomanKeyboardService : InputMethodService() {
             } else emptyList()
             (contextual + listOf("nenu", "meeru", "ela"))
         } else {
-            (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
+            // Phrase suggestions match the first word being typed. Selecting a
+            // phrase replaces the current partial word with the complete phrase.
+            (offlinePhrases.filter { phrase ->
+                phrase.substringBefore(' ').startsWith(prefix, ignoreCase = true)
+            } +
+                personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) } +
-                offlineWords.filter { it.startsWith(prefix, ignoreCase = true) } +
-                offlinePhrases.filter { it.startsWith(prefix, ignoreCase = true) })
+                offlineWords.filter { it.startsWith(prefix, ignoreCase = true) })
                 .distinctBy { it.lowercase() }
         }
         val swipeMatches = pendingSwipeWord?.let { listOf(it) }.orEmpty()

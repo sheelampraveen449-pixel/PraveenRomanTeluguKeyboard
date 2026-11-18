@@ -4,7 +4,7 @@
 
     <application
         android:theme="@style/KeyboardSettingsTheme"
-        android:label="Roman Telugu Keyboard"
+        android:label="Praveen Roman Telugu Keyboard"
         android:allowBackup="false">
 
         <activity

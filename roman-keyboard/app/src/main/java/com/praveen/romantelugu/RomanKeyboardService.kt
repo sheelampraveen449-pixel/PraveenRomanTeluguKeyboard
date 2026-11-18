@@ -740,7 +740,17 @@ class RomanKeyboardService : InputMethodService() {
             "cheppu" to listOf("em", "sangathi", "jarigindi"),
             "thanks" to listOf("and", "a lot", "bro"),
             "office" to listOf("lo", "ki", "nundi"),
-            "intiki" to listOf("vastanu", "vellali", "vachanu")
+            "intiki" to listOf("vastanu", "vellali", "vachanu"),
+            "call" to listOf("cheyyi", "chesanu", "matladudam"),
+            "message" to listOf("pettanu", "chusava", "cheyyi"),
+            "phone" to listOf("cheyyi", "lift", "cheyyandi"),
+            "pani" to listOf("undi", "ayipoyindi", "chestunna"),
+            "time" to listOf("undi", "ledu", "cheppu"),
+            "food" to listOf("tinnava", "kavali", "bagundi"),
+            "amma" to listOf("intlo", "ekkada", "cheppu"),
+            "nanna" to listOf("intlo", "ekkada", "vastunnaru"),
+            "friend" to listOf("vastunnadu", "call", "tho"),
+            "chala" to listOf("bagundi", "manchidi", "kastam")
         )
         // Offer the next part of a saved phrase when the preceding word
         // matches, including while the user is typing that next word.

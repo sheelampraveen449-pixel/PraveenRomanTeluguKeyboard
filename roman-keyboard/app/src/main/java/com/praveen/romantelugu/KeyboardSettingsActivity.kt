@@ -315,10 +315,65 @@ class KeyboardSettingsActivity : Activity() {
     }
 
     private fun buildThemes() {
-        section("CHOOSE A THEME", "The selected theme is shared by the keyboard and settings.")
+        section("PREVIEW", "Your selected appearance is used by the keyboard.")
+        themePreview()
+        section("CHOOSE A THEME")
         themeRow("Light", "light", "Bright keys with a soft background")
         themeRow("Dark", "dark", "Dark surfaces for low-light typing")
         themeRow("Blue", "blue", "A cool blue keyboard appearance")
+    }
+
+    private fun themePreview() {
+        val selectedTheme = prefs.getString("theme", "light")
+        val previewBg = when (selectedTheme) {
+            "dark" -> Color.rgb(30, 33, 40)
+            "blue" -> Color.rgb(190, 211, 239)
+            else -> Color.rgb(211, 216, 224)
+        }
+        val previewKey = when (selectedTheme) {
+            "dark" -> Color.rgb(55, 60, 69)
+            "blue" -> Color.rgb(250, 252, 255)
+            else -> Color.WHITE
+        }
+        val previewAction = when (selectedTheme) {
+            "dark" -> Color.rgb(70, 75, 85)
+            "blue" -> Color.rgb(190, 211, 239)
+            else -> Color.rgb(205, 211, 220)
+        }
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(previewBg, 14)
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+        }
+        val suggestions = TextView(this).apply {
+            text = "nenu                 meeru                 ela"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(if (selectedTheme == "dark") Color.WHITE else Color.rgb(55, 61, 70))
+            setPadding(0, 0, 0, dp(7))
+        }
+        card.addView(suggestions)
+        listOf("qwertyuiop", "asdfghjkl", "⇧ zxcvbnm ⌫", "?123       English       ↵").forEachIndexed { index, line ->
+            val row = LinearLayout(this).apply {
+                gravity = Gravity.CENTER
+                orientation = LinearLayout.HORIZONTAL
+            }
+            line.split(" ").filter { it.isNotEmpty() }.forEach { key ->
+                val action = key in setOf("⇧", "⌫", "?123", "↵")
+                row.addView(TextView(this).apply {
+                    text = key
+                    textSize = if (key.length > 1) 11f else 13f
+                    gravity = Gravity.CENTER
+                    setTextColor(if (selectedTheme == "dark") Color.WHITE else Color.rgb(32, 36, 43))
+                    background = rounded(if (action) previewAction else previewKey, 5)
+                    layoutParams = LinearLayout.LayoutParams(0, dp(31), 1f).apply {
+                        setMargins(dp(2), dp(2), dp(2), dp(2))
+                    }
+                })
+            }
+            card.addView(row)
+        }
+        addCard(card)
     }
 
     private fun themeRow(title: String, value: String, description: String) {
@@ -452,7 +507,7 @@ class KeyboardSettingsActivity : Activity() {
 
     private fun buildLayout() {
         section("KEY SIZE")
-        val current = prefs.getInt("key_height_dp", 47).coerceIn(40, 64)
+        val current = prefs.getInt("key_height_dp", 47).coerceIn(40, 58)
         val valueLabel = TextView(this).apply {
             text = "Key height: ${current} dp"
             textSize = 15f
@@ -461,7 +516,7 @@ class KeyboardSettingsActivity : Activity() {
         }
         addCard(valueLabel)
         val seek = SeekBar(this).apply {
-            max = 24
+            max = 18
             progress = current - 40
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {

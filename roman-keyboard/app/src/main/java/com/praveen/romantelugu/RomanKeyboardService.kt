@@ -149,7 +149,7 @@ class RomanKeyboardService : InputMethodService() {
             renderKeyboard()
         })
         toolbar.addView(toolButton("☺", 0.8f) {
-            currentInputConnection?.commitText("😀", 1)
+            showEmojiPicker()
         })
 
         val mic = toolButton("🎙", 1.1f) {}
@@ -394,6 +394,60 @@ class RomanKeyboardService : InputMethodService() {
         } else {
             connection.commitText("\n", 1)
         }
+    }
+
+    private fun showEmojiPicker() {
+        val emojiGroups = listOf(
+            "😀", "😃", "😄", "😁", "😆", "😅",
+            "😂", "🤣", "😊", "😇", "🙂", "🙃",
+            "😉", "😍", "🥰", "😘", "😋", "😎",
+            "🤔", "🤗", "🤩", "😴", "😭", "🥺",
+            "😡", "🙏", "👏", "👍", "👎", "👌",
+            "❤️", "💕", "💖", "🔥", "🎉", "✨",
+            "💯", "🙌", "🤝", "💐", "🌹", "🎂",
+            "🍕", "🍔", "🍟", "🍫", "☕", "🥤",
+            "⚽", "🏏", "🎮", "🚗", "✈️", "🏠"
+        )
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Emoji")
+            .setNegativeButton("Close", null)
+            .create()
+
+        val scroll = ScrollView(this)
+        val grid = android.widget.GridLayout(this).apply {
+            columnCount = 6
+            setPadding(dp(8), dp(6), dp(8), dp(6))
+        }
+        emojiGroups.forEach { emoji ->
+            val cell = TextView(this).apply {
+                text = emoji
+                textSize = 27f
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                    width = dp(52)
+                    height = dp(52)
+                    setMargins(dp(2), dp(2), dp(2), dp(2))
+                }
+                setOnClickListener {
+                    currentInputConnection?.commitText(emoji, 1)
+                    val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+                    val recent = prefs.getString("recent_emojis", "")
+                        .orEmpty().split("|").filter { it.isNotBlank() }
+                        .toMutableList()
+                    recent.remove(emoji)
+                    recent.add(0, emoji)
+                    prefs.edit().putString("recent_emojis", recent.take(12).joinToString("|")).apply()
+                    updateSuggestionStrip()
+                    dialog.dismiss()
+                }
+            }
+            grid.addView(cell)
+        }
+        scroll.addView(grid)
+        dialog.setView(scroll)
+        dialog.show()
     }
 
     private fun showEditMenu() {

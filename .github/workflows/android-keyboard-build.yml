@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - keyboard-batch9-offline-correction-20261119
+      - gboard-style-rebuild-20261119
     paths:
       - "roman-keyboard/**"
       - ".github/workflows/android-keyboard-build.yml"

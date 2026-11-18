@@ -290,9 +290,9 @@ class RomanKeyboardService : InputMethodService() {
         } else {
             showingClipboardHistory = false
         }
-        toolbar.addView(toolButton("☺", 0.8f) {
-            showEmojiPicker()
-        })
+        if (preferences.getBoolean("emoji_switch_key_enabled", true)) {
+            toolbar.addView(toolButton("☺", 0.8f) { showEmojiPicker() })
+        }
 
         val mic = toolButton("🎙", 1.1f) {}
         mic.contentDescription = if (isSensitiveInput()) "Voice typing unavailable in password fields" else "Hold to dictate in Telugu"
@@ -314,7 +314,9 @@ class RomanKeyboardService : InputMethodService() {
                 else -> true
             }
         }
-        toolbar.addView(mic)
+        if (preferences.getBoolean("voice_input_key_enabled", true)) {
+            toolbar.addView(mic)
+        }
         toolbar.addView(toolButton("⚙", 0.8f) {
             val settingsIntent = Intent(this, KeyboardSettingsActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -525,10 +527,12 @@ class RomanKeyboardService : InputMethodService() {
             })
         }
         bottom.addView(key(enterKeyLabel(), 0.95f) { performEnterAction() })
-        bottom.addView(key("🌐", 0.7f) {
-            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
-                .showInputMethodPicker()
-        })
+        if (preferences.getBoolean("language_switch_key_enabled", true)) {
+            bottom.addView(key("🌐", 0.7f) {
+                (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .showInputMethodPicker()
+            })
+        }
         val hide = key("⌄", 0.6f) { requestHideSelf(0) }
         hide.contentDescription = "Hide keyboard"
         bottom.addView(hide)

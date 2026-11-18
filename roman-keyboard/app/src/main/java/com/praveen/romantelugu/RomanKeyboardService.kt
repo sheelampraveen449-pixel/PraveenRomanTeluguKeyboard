@@ -58,7 +58,27 @@ class RomanKeyboardService : InputMethodService() {
         "vellanu", "tinnava", "tinanu", "cheppu", "cheppandi",
         "ledu", "amma", "nanna", "anna", "akka", "thammudu",
         "friend", "intiki", "office", "pani", "ippude",
-        "repu", "ninna", "roju", "randi", "please", "thanks"
+        "repu", "ninna", "roju", "randi", "please", "thanks",
+        "meeru", "nenu", "nuvvu", "manam", "meeru", "vaallu",
+        "chustunna", "chusanu", "chuddam", "chudali", "vachindi",
+        "vastunnanu", "vastunnaru", "vellali", "vellandi", "vachanu",
+        "matladali", "matladudam", "matladutunna", "cheppanu",
+        "cheppali", "cheppandi", "telusu", "teliyadu", "ardham",
+        "ardhamayindi", "ardhamkaledu", "anukuntunna", "anukunnanu",
+        "nachindi", "nachaledu", "ishtam", "ishtamledu", "parledu",
+        "problem", "help", "message", "call", "phone", "number",
+        "ekkadunnavu", "ekkadunnaru", "eppudostavu", "eppudostaru",
+        "vastava", "vastara", "veltava", "veltara", "chesava",
+        "chesara", "tinnara", "tintunnava", "paduko", "lechu",
+        "nidra", "aakali", "neellu", "tindi", "illu", "intlo",
+        "bayata", "lopala", "mundhu", "venaka", "pakkana",
+        "ivala", "eroju", "ninna", "monna", "repatiki",
+        "udayam", "madhyanam", "sayamtram", "ratri", "podhuna",
+        "ippatiki", "ventane", "konchem", "chala", "inka",
+        "malli", "maatram", "kuda", "aithe", "kani", "endukante",
+        "avakasham", "santosham", "kastam", "bagaledu", "super",
+        "awesome", "okay", "sarey", "dhanyavadalu", "shubharatri",
+        "subhodayam", "namaskaram", "welcome", "sorry", "congrats"
     )
 
     override fun onCreate() {
@@ -624,7 +644,26 @@ class RomanKeyboardService : InputMethodService() {
             "naaku" to listOf("kavali", "telusu", "ardham"),
             "em" to listOf("chesavu", "jarigindi", "kavali"),
             "repu" to listOf("vastanu", "kaluddam", "matladuddam"),
-            "ippudu" to listOf("cheppu", "randi", "chuddam")
+            "ippudu" to listOf("cheppu", "randi", "chuddam"),
+            "nuvvu" to listOf("ekkada", "em", "vastava"),
+            "naaku" to listOf("telusu", "ardham", "ishtam"),
+            "meeru" to listOf("ekkadunnaru", "vastara", "cheppandi"),
+            "bagunnanu" to listOf("meeru", "kuda", "chala"),
+            "bagunnara" to listOf("meeru", "ani", "cheppandi"),
+            "emiti" to listOf("jarigindi", "sangathi", "matter"),
+            "enti" to listOf("sangathi", "problem", "matter"),
+            "ekkada" to listOf("unnavu", "unnaru", "ki vellavu"),
+            "eppudu" to listOf("vastavu", "vastaru", "kaluddam"),
+            "enduku" to listOf("ala", "cheppavu", "jarigindi"),
+            "repu" to listOf("kaluddam", "vastanu", "matladuddam"),
+            "ninna" to listOf("em", "ekkadiki", "vachanu"),
+            "sare" to listOf("aithe", "vastanu", "kaluddam"),
+            "avunu" to listOf("kada", "nijame", "correct"),
+            "ledu" to listOf("andi", "inka", "parledu"),
+            "cheppu" to listOf("em", "sangathi", "jarigindi"),
+            "thanks" to listOf("and", "a lot", "bro"),
+            "office" to listOf("lo", "ki", "nundi"),
+            "intiki" to listOf("vastanu", "vellali", "vachanu")
         )
         val candidates = if (prefix.isBlank()) {
             val contextual = if (prefs.getBoolean("next_word_enabled", true)) {

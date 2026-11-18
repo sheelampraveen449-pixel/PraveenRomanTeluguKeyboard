@@ -1120,8 +1120,10 @@ class RomanKeyboardService : InputMethodService() {
                 else -> 21f
             }
             gravity = Gravity.CENTER
-            val theme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getString("theme", "light")
+            val keyPreferences = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+            val theme = keyPreferences.getString("theme", "light")
+            val roundedKeys = keyPreferences.getBoolean("rounded_keys_enabled", true)
+            val keyBorders = keyPreferences.getBoolean("key_borders_enabled", false)
             val isActionKey = label in setOf("⇧", "⇪", "⌫", "?123", "ABC", ",", ".", "🌐", "⌄") ||
                 label in setOf("Go", "Search", "Send", "Next", "Done", "↵")
             val isEnter = label in setOf("Go", "Search", "Send", "Next", "Done", "↵")
@@ -1148,13 +1150,20 @@ class RomanKeyboardService : InputMethodService() {
             )
             background = GradientDrawable().apply {
                 setColor(keyColor)
-                cornerRadius = dp(if (label == " ") 8 else 6).toFloat()
+                cornerRadius = dp(
+                    if (!roundedKeys) 4 else if (label == " ") 10 else 8
+                ).toFloat()
+                if (keyBorders) {
+                    val borderColor = if (theme == "dark") Color.rgb(103, 111, 124)
+                        else Color.rgb(151, 160, 174)
+                    setStroke(dp(1), borderColor)
+                }
             }
-            val selectedFont = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getString("keyboard_font", "sans-serif") ?: "sans-serif"
+            val selectedFont = keyPreferences.getString("keyboard_font", "sans-serif")
+                ?: "sans-serif"
             typeface = Typeface.create(
-                if (isActionKey) "$selectedFont-medium" else selectedFont,
-                Typeface.NORMAL
+                selectedFont,
+                if (isActionKey) Typeface.BOLD else Typeface.NORMAL
             )
             val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight)
             params.setMargins(dp(2), dp(2), dp(2), dp(2))

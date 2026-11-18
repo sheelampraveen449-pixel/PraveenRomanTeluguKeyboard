@@ -199,6 +199,9 @@ class RomanKeyboardService : InputMethodService() {
         )
         if (newSelStart == newSelEnd) {
             updateSuggestionStrip()
+        } else {
+            // Do not show stale word predictions while a range is selected.
+            suggestionRow?.removeAllViews()
         }
     }
 

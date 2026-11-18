@@ -81,6 +81,28 @@ class RomanKeyboardService : InputMethodService() {
         "subhodayam", "namaskaram", "welcome", "sorry", "congrats"
     )
 
+    // Offline dictionaries are bundled with the APK and never require network access.
+    private val offlineWords: List<String> by lazy {
+        loadDictionaryAsset("roman_telugu_words.txt")
+    }
+
+    private val offlinePhrases: List<String> by lazy {
+        loadDictionaryAsset("roman_telugu_phrases.txt")
+    }
+
+    private fun loadDictionaryAsset(fileName: String): List<String> {
+        return try {
+            assets.open(fileName).bufferedReader().useLines { lines ->
+                lines.map { it.trim().lowercase() }
+                    .filter { it.matches(Regex("[a-z]+(?: [a-z]+)*")) }
+                    .distinct()
+                    .toList()
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         clipboardHistory = ClipboardHistoryStore(this)
@@ -672,7 +694,9 @@ class RomanKeyboardService : InputMethodService() {
             (contextual + listOf("nenu", "meeru", "ela"))
         } else {
             (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
-                romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) })
+                romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) } +
+                offlineWords.filter { it.startsWith(prefix, ignoreCase = true) } +
+                offlinePhrases.filter { it.startsWith(prefix, ignoreCase = true) })
                 .distinctBy { it.lowercase() }
         }
         val swipeMatches = pendingSwipeWord?.let { listOf(it) }.orEmpty()

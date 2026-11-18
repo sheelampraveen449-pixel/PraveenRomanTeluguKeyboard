@@ -21,7 +21,7 @@ else:
 
 # Use the normal local Android debug keystore rather than the upstream shared signing key.
 g = re.sub(
-    r"\n\s*signingConfigs\s*\{\s*debug\s*\{\s*storeFile\s+file\("java/shared\.keystore"\)\s*\}\s*\}\s*",
+    r'\n\s*signingConfigs\s*\{\s*debug\s*\{\s*storeFile\s+file\("java/shared\.keystore"\)\s*\}\s*\}\s*',
     "\n",
     g,
     count=1,

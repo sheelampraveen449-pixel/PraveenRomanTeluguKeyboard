@@ -99,7 +99,7 @@ class RomanKeyboardService : InputMethodService() {
         val shouldShift = when {
             requestsAllCaps -> true
             requestsWordCaps -> before.isEmpty() || before.lastOrNull()?.isWhitespace() == true
-            else -> before.isEmpty() || before.lastOrNull() in listOf('.', '!', '?', '\n')
+            else -> before.isEmpty() || before.lastOrNull()?.let { it in setOf('.', '!', '?', '\n') } == true
         }
         if (shifted != shouldShift) {
             shifted = shouldShift
@@ -436,6 +436,11 @@ class RomanKeyboardService : InputMethodService() {
             "🍕", "🍔", "🍟", "🍫", "☕", "🥤",
             "⚽", "🏏", "🎮", "🚗", "✈️", "🏠"
         )
+        val preferences = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        val recentEmojis = preferences.getString("recent_emojis", "")
+            .orEmpty().split("|").filter { it.isNotBlank() }
+        val orderedEmojis = (recentEmojis + emojiGroups).distinct()
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Emoji")
             .setNegativeButton("Close", null)
@@ -446,7 +451,7 @@ class RomanKeyboardService : InputMethodService() {
             columnCount = 6
             setPadding(dp(8), dp(6), dp(8), dp(6))
         }
-        emojiGroups.forEach { emoji ->
+        orderedEmojis.forEach { emoji ->
             val cell = TextView(this).apply {
                 text = emoji
                 textSize = 27f

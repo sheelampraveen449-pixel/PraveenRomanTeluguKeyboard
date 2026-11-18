@@ -257,6 +257,8 @@ class RomanKeyboardService : InputMethodService() {
                     if (shifted && !capsLock) {
                         shifted = false
                         renderKeyboard()
+                    } else {
+                        updateAutoCapitalization()
                     }
                 }, {
                     currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)

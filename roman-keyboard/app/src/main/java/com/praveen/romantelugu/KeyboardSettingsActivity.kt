@@ -292,6 +292,7 @@ class KeyboardSettingsActivity : Activity() {
         navRow("🌐", "Languages", "Roman Telugu and English QWERTY", "languages")
         navRow("⌨", "Preferences", "Keyboard behaviour, sound and vibration", "preferences")
         navRow("🎨", "Theme", "Colours and keyboard appearance", "themes")
+        navRow("📐", "Keyboard height and layout", "Adjust key height and number row", "layout")
         section("TEXT INPUT")
         navRow("✍", "Text correction", "Suggestions, next words and correction", "correction")
         navRow("〰", "Glide typing", "Swipe-to-type support status", "glide")
@@ -425,7 +426,7 @@ class KeyboardSettingsActivity : Activity() {
         switchRow("Contextual next-word suggestions", "Suggest likely words based on the word before the cursor", "next_word_enabled", true)
         switchRow("Personal dictionary suggestions", "Include words you add to your personal dictionary", "personal_dictionary_suggestions", true)
         infoCard("How suggestions work", "Suggestions combine the built-in offline Roman Telugu word list, your personal words and a small contextual next-word model. Tapping a suggestion replaces the current word.")
-        infoCard("Still in development", "Full language-model prediction, automatic spelling correction and swipe typing are not implemented yet.")
+        infoCard("Feature status", "Basic Roman Telugu matching and contextual next-word suggestions are available. Editor-requested sentence capitalisation is supported. Full language-model prediction and automatic spelling correction are still in development.")
         navRow("📖", "Personal dictionary", "Add and manage your own words", "dictionary")
     }
 

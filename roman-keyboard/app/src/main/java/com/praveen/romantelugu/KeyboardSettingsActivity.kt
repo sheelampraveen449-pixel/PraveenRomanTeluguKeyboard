@@ -646,7 +646,7 @@ class KeyboardSettingsActivity : Activity() {
             }
             val trigger = EditText(this).apply {
                 hint = "Shortcut (e.g. brb)"
-                singleLine = true
+                setSingleLine(true)
                 filters = arrayOf(InputFilter.LengthFilter(20))
             }
             val expansion = EditText(this).apply {

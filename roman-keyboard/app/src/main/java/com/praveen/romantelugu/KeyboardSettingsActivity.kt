@@ -413,8 +413,10 @@ class KeyboardSettingsActivity : Activity() {
     private fun buildCorrection() {
         section("SUGGESTIONS")
         switchRow("Roman Telugu suggestions", "Show matching Roman Telugu words above the keyboard", "suggestions_enabled", true)
-        infoCard("How suggestions work", "Suggestions currently use the built-in offline Roman Telugu word list. Tapping a suggestion replaces the current word.")
-        infoCard("Not available yet", "Automatic next-word prediction, autocorrect and swipe typing are not implemented in this build.")
+        switchRow("Contextual next-word suggestions", "Suggest likely words based on the word before the cursor", "next_word_enabled", true)
+        switchRow("Personal dictionary suggestions", "Include words you add to your personal dictionary", "personal_dictionary_suggestions", true)
+        infoCard("How suggestions work", "Suggestions combine the built-in offline Roman Telugu word list, your personal words and a small contextual next-word model. Tapping a suggestion replaces the current word.")
+        infoCard("Still in development", "Full language-model prediction, automatic spelling correction and swipe typing are not implemented yet.")
         navRow("📖", "Personal dictionary", "Add and manage your own words", "dictionary")
     }
 

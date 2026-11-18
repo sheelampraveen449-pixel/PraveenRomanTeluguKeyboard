@@ -48,7 +48,9 @@ class KeyboardSettingsActivity : Activity() {
         window.navigationBarColor = bg
         window.setBackgroundDrawable(ColorDrawable(bg))
         window.decorView.setBackgroundColor(bg)
-        renderPage("home", false)
+        val requestedPage = intent.getStringExtra("open_page")
+            ?.takeIf { it in setOf("home", "themes", "layout") } ?: "home"
+        renderPage(requestedPage, false)
     }
 
     private fun dp(value: Int) =

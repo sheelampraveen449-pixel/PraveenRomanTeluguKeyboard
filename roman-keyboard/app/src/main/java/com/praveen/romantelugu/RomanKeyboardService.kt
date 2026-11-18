@@ -959,6 +959,7 @@ class RomanKeyboardService : InputMethodService() {
                 }
             }, {
                 currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)
+                updateSuggestionStrip()
             })
             if (!symbolsMode && c.isLetter()) {
                 letterKey.tag = c.lowercaseChar().toString()

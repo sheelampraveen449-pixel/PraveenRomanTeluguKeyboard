@@ -372,6 +372,9 @@ class RomanKeyboardService : InputMethodService() {
             toolsRow.addView(toolButton("Settings", 1f) {
                 openSettingsPage("home")
             }, LinearLayout.LayoutParams(dp(100), dp(38)))
+            toolsRow.addView(toolButton("Hide", 1f) {
+                requestHideSelf(0)
+            }, LinearLayout.LayoutParams(dp(76), dp(38)))
             toolsRow.addView(toolButton("Close", 1f) {
                 showingToolsPanel = false
                 renderKeyboard()
@@ -523,7 +526,7 @@ class RomanKeyboardService : InputMethodService() {
             renderKeyboard()
         })
         if (symbolsMode) {
-            bottom.addView(key(if (symbolsPageTwo) "123" else "!?#", 0.8f) {
+            bottom.addView(key(if (symbolsPageTwo) "123" else "=\\<", 0.8f) {
                 symbolsPageTwo = !symbolsPageTwo
                 renderKeyboard()
             })
@@ -600,9 +603,6 @@ class RomanKeyboardService : InputMethodService() {
                     .showInputMethodPicker()
             }))
         }
-        val hide = key("⌄", 0.6f) { requestHideSelf(0) }
-        hide.contentDescription = "Hide keyboard"
-        bottom.addView(hide)
         root.addView(
             bottom,
             LinearLayout.LayoutParams(

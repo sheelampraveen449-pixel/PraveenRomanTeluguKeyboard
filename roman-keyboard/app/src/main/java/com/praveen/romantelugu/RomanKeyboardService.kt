@@ -555,6 +555,8 @@ class RomanKeyboardService : InputMethodService() {
             connection.deleteSurroundingTextInCodePoints(1, 0)
         }
         updateSuggestionStrip()
+        // Re-evaluate sentence/word capitalisation after deleting text.
+        updateAutoCapitalization()
     }
 
     private fun enterKeyLabel(): String {

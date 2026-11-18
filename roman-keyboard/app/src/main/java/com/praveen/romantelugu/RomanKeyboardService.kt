@@ -274,10 +274,11 @@ class RomanKeyboardService : InputMethodService() {
         val configuredKeyHeight = preferences.getInt("key_height_dp", 42).coerceIn(38, 50)
         val hasNumberRow = preferences.getBoolean("number_row_enabled", true)
         val hasSuggestions = preferences.getBoolean("suggestions_enabled", true) && !isSensitiveInput()
+        val visibleKeyRows = 4 + if (!symbolsMode && hasNumberRow) 1 else 0
         val requiredKeyboardHeight = 44 +
             (if (showingToolsPanel) 42 else 0) +
             (if (hasSuggestions) 38 else 0) +
-            configuredKeyHeight * ((if (hasNumberRow) 1 else 0) + 4) + 12
+            configuredKeyHeight * visibleKeyRows + 12
         root.minimumHeight = dp(requiredKeyboardHeight)
         root.setBackgroundColor(
             when (selectedTheme) {
@@ -675,16 +676,11 @@ class RomanKeyboardService : InputMethodService() {
         val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         val before = connection.getTextBeforeCursor(48, 0)?.toString().orEmpty()
         val word = before.takeLastWhile { it.isLetter() }
-        val corrections = mapOf(
-            "nuvuu" to "nuvvu",
-            "bagunanu" to "bagunnanu",
-            "bagunara" to "bagunnara",
-            "teh" to "the",
-            "adn" to "and",
-            "dont" to "don't",
-            "cant" to "can't",
-            "im" to "I'm"
-        )
+        val corrections = if (englishAlMode) {
+            mapOf("teh" to "the", "adn" to "and", "dont" to "don't", "cant" to "can't", "im" to "I'm")
+        } else {
+            mapOf("nuvuu" to "nuvvu", "bagunanu" to "bagunnanu", "bagunara" to "bagunnara")
+        }
         val personalWordSet = prefs.getStringSet("personal_dictionary", emptySet())
             ?.map { it.lowercase() }?.toSet().orEmpty()
         val shortcuts = prefs.getStringSet("text_shortcuts", emptySet()).orEmpty()
@@ -893,6 +889,22 @@ class RomanKeyboardService : InputMethodService() {
         val inputType = currentInputEditorInfo?.inputType ?: 0
         if (isSensitiveInput() ||
             (inputType and EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0) return
+
+        // English (AL) is a separate profile: do not show Roman Telugu
+        // dictionary, phrase, or next-word candidates in this mode.
+        if (englishAlMode) {
+            pendingSwipeWord = null
+            val darkTheme = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+                .getString("theme", "light") == "dark"
+            row.addView(TextView(this).apply {
+                text = "English (AL)"
+                textSize = 12f
+                gravity = Gravity.CENTER
+                setTextColor(if (darkTheme) Color.LTGRAY else Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(0, dp(34), 1f)
+            })
+            return
+        }
 
         val beforeCursor = currentInputConnection
             ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
@@ -1196,7 +1208,7 @@ class RomanKeyboardService : InputMethodService() {
                 currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)
                 updateSuggestionStrip()
             })
-            if (!symbolsMode && c.isLetter()) {
+            if (!symbolsMode && !englishAlMode && c.isLetter()) {
                 letterKey.tag = c.lowercaseChar().toString()
                 letterKey.contentDescription = "$label key. Swipe across letters to type a word"
                 letterKey.setOnTouchListener { view, event ->

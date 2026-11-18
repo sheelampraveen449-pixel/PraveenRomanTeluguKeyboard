@@ -316,7 +316,7 @@ class RomanKeyboardService : InputMethodService() {
             toolbar,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(36)
+                dp(44)
             )
         )
 

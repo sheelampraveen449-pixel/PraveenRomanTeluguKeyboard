@@ -76,7 +76,8 @@ class KeyboardSettingsActivity : Activity() {
 
         val toolbar = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(12), dp(18), dp(10))
+            setPadding(dp(12), dp(10), dp(18), dp(10))
+            minimumHeight = dp(64)
         }
 
         val back = TextView(this).apply {
@@ -98,7 +99,7 @@ class KeyboardSettingsActivity : Activity() {
         }
         pageTitle = TextView(this).apply {
             text = if (page == "home") "Settings" else pageName(page)
-            textSize = 22f
+            textSize = 20f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(primary)
         }
@@ -168,20 +169,21 @@ class KeyboardSettingsActivity : Activity() {
     private fun section(title: String, description: String? = null) {
         val block = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(4), dp(20), dp(4), dp(10))
+            setPadding(dp(4), dp(24), dp(4), dp(10))
         }
         block.addView(TextView(this).apply {
-            text = title
-            textSize = 14f
+            text = title.uppercase()
+            textSize = 13f
+            letterSpacing = 0.035f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(accent)
+            setTextColor(secondary)
         })
         if (description != null) {
             block.addView(TextView(this).apply {
                 text = description
                 textSize = 13f
                 setTextColor(secondary)
-                setPadding(0, dp(4), 0, 0)
+                setPadding(0, dp(5), 0, 0)
             })
         }
         content.addView(block)
@@ -190,20 +192,19 @@ class KeyboardSettingsActivity : Activity() {
     private fun infoCard(title: String, description: String) {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(surface)
-            setPadding(dp(17), dp(15), dp(17), dp(15))
+            setPadding(dp(14), dp(13), dp(14), dp(13))
         }
         card.addView(TextView(this).apply {
             text = title
             textSize = 15f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(primary)
         })
         card.addView(TextView(this).apply {
             text = description
             textSize = 13f
             setTextColor(secondary)
-            setPadding(0, dp(6), 0, 0)
+            setPadding(0, dp(5), 0, 0)
         })
         addCard(card)
     }
@@ -223,23 +224,23 @@ class KeyboardSettingsActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(surface)
-            setPadding(dp(14), dp(13), dp(12), dp(13))
+            setPadding(dp(8), dp(13), dp(8), dp(13))
             isClickable = true
             isFocusable = true
+            setBackgroundResource(android.R.drawable.list_selector_background)
             setOnClickListener { renderPage(destination) }
         }
 
         card.addView(TextView(this).apply {
             text = icon
-            textSize = 23f
+            textSize = 22f
             gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(dp(42), dp(46))
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(48))
         })
 
         val labels = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), 0, dp(4), 0)
+            setPadding(dp(12), 0, dp(4), 0)
         }
         labels.addView(TextView(this).apply {
             text = title
@@ -256,10 +257,15 @@ class KeyboardSettingsActivity : Activity() {
         card.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
         card.addView(TextView(this).apply {
             text = "›"
-            textSize = 27f
+            textSize = 25f
+            gravity = Gravity.CENTER
             setTextColor(secondary)
+            layoutParams = LinearLayout.LayoutParams(dp(28), dp(42))
         })
         addCard(card)
+        content.addView(View(this).apply {
+            setBackgroundColor(if (dark) Color.rgb(55, 59, 68) else Color.rgb(225, 228, 234))
+        }, LinearLayout.LayoutParams(-1, dp(1)))
     }
 
     private fun switchRow(
@@ -271,8 +277,7 @@ class KeyboardSettingsActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(surface)
-            setPadding(dp(16), dp(12), dp(12), dp(12))
+            setPadding(dp(14), dp(13), dp(12), dp(13))
         }
         val labels = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -297,6 +302,9 @@ class KeyboardSettingsActivity : Activity() {
             }
         })
         addCard(row)
+        content.addView(View(this).apply {
+            setBackgroundColor(if (dark) Color.rgb(55, 59, 68) else Color.rgb(225, 228, 234))
+        }, LinearLayout.LayoutParams(-1, dp(1)))
     }
 
     private fun buildHome() {

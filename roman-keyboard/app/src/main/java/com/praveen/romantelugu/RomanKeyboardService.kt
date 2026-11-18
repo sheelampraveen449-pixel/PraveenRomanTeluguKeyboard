@@ -18,6 +18,7 @@ import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.EditText
+import androidx.core.widget.addTextChangedListener
 import android.widget.HorizontalScrollView
 import android.widget.ScrollView
 import android.widget.TextView
@@ -464,8 +465,8 @@ class RomanKeyboardService : InputMethodService() {
                             repeatingDelete = false
                             backspace.removeCallbacks(repeatDelete)
                             val before = currentInputConnection?.getTextBeforeCursor(256, 0)?.toString().orEmpty()
-                            val count = before.takeLastWhile { !it.isWhitespace() }
-                                .codePointCount(0, before.takeLastWhile { !it.isWhitespace() })
+                            val previousWord = before.takeLastWhile { !it.isWhitespace() }
+                            val count = previousWord.codePointCount(0, previousWord.length)
                             if (count > 0) {
                                 currentInputConnection?.deleteSurroundingTextInCodePoints(count, 0)
                                 updateSuggestionStrip()
@@ -808,7 +809,7 @@ class RomanKeyboardService : InputMethodService() {
         }
         val search = EditText(this).apply {
             hint = "Search emoji"
-            singleLine = true
+            setSingleLine(true)
             textSize = 15f
             contentDescription = "Search emojis by keyword or emoji"
         }

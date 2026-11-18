@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Use a dark launch window so Android never paints a white frame before
+         KeyboardSettingsActivity applies the user's selected theme. -->
+    <style name="KeyboardSettingsTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#13151B</item>
+        <item name="android:colorAccent">#4B69BE</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

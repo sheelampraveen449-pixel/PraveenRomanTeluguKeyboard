@@ -316,7 +316,7 @@ class RomanKeyboardService : InputMethodService() {
             toolbar,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(40)
+                dp(36)
             )
         )
 
@@ -687,7 +687,7 @@ class RomanKeyboardService : InputMethodService() {
             suggestionRow,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(39)
+                dp(34)
             )
         )
         updateSuggestionStrip()
@@ -972,7 +972,7 @@ class RomanKeyboardService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             if (letters.length == 9) {
-                setPadding(dp(15), 0, dp(15), 0)
+                setPadding(dp(12), 0, dp(12), 0)
             }
         }
         letters.forEach { c ->
@@ -1118,9 +1118,9 @@ class RomanKeyboardService : InputMethodService() {
                 if (isActionKey) Typeface.NORMAL else Typeface.NORMAL
             )
             val keyHeight = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getInt("key_height_dp", 47).coerceIn(40, 58)
+                .getInt("key_height_dp", 42).coerceIn(38, 50)
             val params = LinearLayout.LayoutParams(0, dp(keyHeight), weight)
-            params.setMargins(dp(2), dp(3), dp(2), dp(3))
+            params.setMargins(dp(2), dp(1), dp(2), dp(1))
             layoutParams = params
             elevation = dp(if (isActionKey) 0 else 1).toFloat()
             setPadding(dp(1), 0, dp(1), 0)

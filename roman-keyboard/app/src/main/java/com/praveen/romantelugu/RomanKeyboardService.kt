@@ -40,6 +40,11 @@ class RomanKeyboardService : InputMethodService() {
     private var showingClipboardHistory = false
     private var suggestionRow: LinearLayout? = null
     private var toneGenerator: ToneGenerator? = null
+    private val swipePath = StringBuilder()
+    private var swipeStartX = 0f
+    private var swipeStartY = 0f
+    private var swipeMoved = false
+    private var pendingSwipeWord: String? = null
 
     private val romanTeluguWords = listOf(
         "nenu", "naaku", "naatho", "nuvvu", "neeku", "neetho",
@@ -619,7 +624,8 @@ class RomanKeyboardService : InputMethodService() {
             (personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) })
         }
-        val matches = candidates.distinct().take(3)
+        val swipeMatches = pendingSwipeWord?.let { listOf(it) }.orEmpty()
+        val matches = (swipeMatches + candidates).distinct().take(3)
 
         val theme = prefs.getString("theme", "light")
         val textColor = if (theme == "dark") Color.rgb(230, 233, 239) else Color.rgb(55, 61, 70)
@@ -644,13 +650,18 @@ class RomanKeyboardService : InputMethodService() {
                 setTextColor(textColor)
                 layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
                 setOnClickListener {
-                    val currentBeforeCursor = currentInputConnection
-                        ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
-                    val currentWord = currentBeforeCursor.takeLastWhile { it.isLetter() }
-                    if (currentWord.isNotEmpty()) {
-                        currentInputConnection?.deleteSurroundingTextInCodePoints(currentWord.codePointCount(0, currentWord.length), 0)
+                    if (pendingSwipeWord == word) {
+                        currentInputConnection?.commitText("$word ", 1)
+                        pendingSwipeWord = null
+                    } else {
+                        val currentBeforeCursor = currentInputConnection
+                            ?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
+                        val currentWord = currentBeforeCursor.takeLastWhile { it.isLetter() }
+                        if (currentWord.isNotEmpty()) {
+                            currentInputConnection?.deleteSurroundingTextInCodePoints(currentWord.codePointCount(0, currentWord.length), 0)
+                        }
+                        currentInputConnection?.commitText("$word ", 1)
                     }
-                    currentInputConnection?.commitText("$word ", 1)
                     updateSuggestionStrip()
                 }
             }
@@ -755,6 +766,49 @@ class RomanKeyboardService : InputMethodService() {
         )
     }
 
+    private fun findSwipeLetter(rawX: Float, rawY: Float): Char? {
+        val root = keyboardRoot ?: return null
+        fun visit(view: View): Char? {
+            if (view.visibility != View.VISIBLE || view.width <= 0 || view.height <= 0) return null
+            val location = IntArray(2)
+            view.getLocationOnScreen(location)
+            val inside = rawX >= location[0] && rawX <= location[0] + view.width &&
+                rawY >= location[1] && rawY <= location[1] + view.height
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) {
+                    visit(view.getChildAt(index))?.let { return it }
+                }
+            }
+            if (inside) return (view.tag as? String)?.singleOrNull()
+            return null
+        }
+        return visit(root)
+    }
+
+    private fun bestSwipeWords(path: String): List<String> {
+        if (path.length < 3) return emptyList()
+        fun distance(a: String, b: String): Int {
+            var previous = IntArray(b.length + 1) { it }
+            for (i in a.indices) {
+                val current = IntArray(b.length + 1)
+                current[0] = i + 1
+                for (j in b.indices) {
+                    current[j + 1] = minOf(
+                        current[j] + 1,
+                        previous[j + 1] + 1,
+                        previous[j] + if (a[i] == b[j]) 0 else 1
+                    )
+                }
+                previous = current
+            }
+            return previous[b.length]
+        }
+        return romanTeluguWords.distinct()
+            .filter { kotlin.math.abs(it.length - path.length) <= maxOf(3, path.length / 2) }
+            .sortedBy { distance(path, it) + kotlin.math.abs(path.length - it.length) }
+            .take(3)
+    }
+
     private fun addRow(root: LinearLayout, letters: String, weight: Float) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -777,7 +831,7 @@ class RomanKeyboardService : InputMethodService() {
                 'h' to "-", 'j' to "+", 'k' to "(",
                 'l' to ")"
             )
-            row.addView(key(label, weight, {
+            val letterKey = key(label, weight, {
                 currentInputConnection?.commitText(label, 1)
                 updateSuggestionStrip()
                 if (shifted && !capsLock && !symbolsMode) {
@@ -788,7 +842,50 @@ class RomanKeyboardService : InputMethodService() {
                 }
             }, {
                 currentInputConnection?.commitText(alternatives[c].orEmpty(), 1)
-            }))
+            })
+            if (!symbolsMode && c.isLetter()) {
+                letterKey.tag = c.lowercaseChar().toString()
+                letterKey.contentDescription = "$label key. Swipe across letters to type a word"
+                letterKey.setOnTouchListener { view, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            swipePath.clear()
+                            swipePath.append(c.lowercaseChar())
+                            swipeStartX = event.rawX
+                            swipeStartY = event.rawY
+                            swipeMoved = false
+                            pendingSwipeWord = null
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            val traced = findSwipeLetter(event.rawX, event.rawY)
+                            if (traced != null && swipePath.lastOrNull() != traced) swipePath.append(traced)
+                            if (kotlin.math.hypot((event.rawX - swipeStartX).toDouble(), (event.rawY - swipeStartY).toDouble()) > dp(24)) swipeMoved = true
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_UP -> {
+                            val traced = findSwipeLetter(event.rawX, event.rawY)
+                            if (traced != null && swipePath.lastOrNull() != traced) swipePath.append(traced)
+                            val distance = kotlin.math.hypot((event.rawX - swipeStartX).toDouble(), (event.rawY - swipeStartY).toDouble())
+                            val isSwipe = swipeMoved && distance > dp(24) && swipePath.length >= 3
+                            if (isSwipe && !isSensitiveInput()) {
+                                pendingSwipeWord = bestSwipeWords(swipePath.toString()).firstOrNull()
+                                if (pendingSwipeWord != null) updateSuggestionStrip() else view.performClick()
+                            } else {
+                                view.performClick()
+                            }
+                            swipePath.clear()
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_CANCEL -> {
+                            swipePath.clear()
+                            true
+                        }
+                        else -> true
+                    }
+                }
+            }
+            row.addView(letterKey)
         }
         root.addView(
             row,

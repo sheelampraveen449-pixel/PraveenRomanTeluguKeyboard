@@ -1113,9 +1113,11 @@ class RomanKeyboardService : InputMethodService() {
                 setColor(keyColor)
                 cornerRadius = dp(if (label == " ") 8 else 6).toFloat()
             }
+            val selectedFont = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+                .getString("keyboard_font", "sans-serif") ?: "sans-serif"
             typeface = Typeface.create(
-                if (isActionKey) "sans-serif-medium" else "sans-serif",
-                if (isActionKey) Typeface.NORMAL else Typeface.NORMAL
+                if (isActionKey) "$selectedFont-medium" else selectedFont,
+                Typeface.NORMAL
             )
             val keyHeight = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
                 .getInt("key_height_dp", 42).coerceIn(38, 50)

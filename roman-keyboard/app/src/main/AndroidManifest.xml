@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:theme="@style/KeyboardSettingsTheme"
         android:label="Roman Telugu Keyboard"
         android:allowBackup="false">
 

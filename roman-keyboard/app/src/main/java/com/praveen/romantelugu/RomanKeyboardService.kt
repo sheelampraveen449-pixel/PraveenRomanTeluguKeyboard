@@ -687,17 +687,29 @@ class RomanKeyboardService : InputMethodService() {
             "office" to listOf("lo", "ki", "nundi"),
             "intiki" to listOf("vastanu", "vellali", "vachanu")
         )
+        // Offer the next part of a saved phrase when the preceding word
+        // matches, including while the user is typing that next word.
+        val phraseContinuations = if (previousWord.isNotBlank()) {
+            offlinePhrases.mapNotNull { phrase ->
+                val continuation = phrase.removePrefix("$previousWord ").takeIf {
+                    phrase.startsWith("$previousWord ", ignoreCase = true)
+                } ?: return@mapNotNull null
+                if (prefix.isBlank() || continuation.substringBefore(' ')
+                        .startsWith(prefix, ignoreCase = true)) continuation else null
+            }
+        } else emptyList()
+
         val candidates = if (prefix.isBlank()) {
             val contextual = if (prefs.getBoolean("next_word_enabled", true)) {
                 nextWords[previousWord].orEmpty()
             } else emptyList()
-            (contextual + listOf("nenu", "meeru", "ela"))
+            (phraseContinuations + contextual + listOf("nenu", "meeru", "ela"))
+                .distinctBy { it.lowercase() }
         } else {
-            // Phrase suggestions match the first word being typed. Selecting a
-            // phrase replaces the current partial word with the complete phrase.
-            (offlinePhrases.filter { phrase ->
-                phrase.substringBefore(' ').startsWith(prefix, ignoreCase = true)
-            } +
+            (phraseContinuations +
+                offlinePhrases.filter { phrase ->
+                    phrase.substringBefore(' ').startsWith(prefix, ignoreCase = true)
+                } +
                 personalWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 romanTeluguWords.filter { it.startsWith(prefix, ignoreCase = true) } +
                 offlineWords.filter { it.startsWith(prefix, ignoreCase = true) })

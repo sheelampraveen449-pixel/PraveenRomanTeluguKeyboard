@@ -32,7 +32,9 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK and NDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install required Android packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;25.1.8937393"
@@ -81,7 +83,7 @@ jobs:
             adb shell dumpsys input_method | grep -q 'com.praveen.newgboard'
             adb shell am start -n com.praveen.newgboard/com.android.inputmethod.latin.setup.SetupActivity
             sleep 3
-            adb logcat -d -t 2000 | grep -E 'FATAL EXCEPTION|AndroidRuntime' && exit 1 || true
+            if adb logcat -d -t 2000 | grep -E 'FATAL EXCEPTION|AndroidRuntime'; then exit 1; fi
 
       - name: Upload NEW GBOARD debug APK
         uses: actions/upload-artifact@v4

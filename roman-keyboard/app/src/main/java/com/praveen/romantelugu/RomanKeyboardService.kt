@@ -122,6 +122,8 @@ class RomanKeyboardService : InputMethodService() {
         symbolsMode = false
         shifted = false
         capsLock = false
+        lastShiftTap = 0L
+        lastSpaceTapAt = 0L
         showingClipboardHistory = false
         pendingSwipeWord = null
         swipePath.clear()

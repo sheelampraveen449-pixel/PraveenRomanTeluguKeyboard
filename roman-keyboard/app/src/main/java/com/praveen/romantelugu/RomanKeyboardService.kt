@@ -17,6 +17,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.LinearLayout
+import android.widget.HorizontalScrollView
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -39,6 +40,7 @@ class RomanKeyboardService : InputMethodService() {
     private var clipboardManager: ClipboardManager? = null
     private var clipboardListener: ClipboardManager.OnPrimaryClipChangedListener? = null
     private var showingClipboardHistory = false
+    private var showingToolsPanel = false
     private var suggestionRow: LinearLayout? = null
     private var toneGenerator: ToneGenerator? = null
     private val swipePath = StringBuilder()
@@ -125,6 +127,7 @@ class RomanKeyboardService : InputMethodService() {
         lastShiftTap = 0L
         lastSpaceTapAt = 0L
         showingClipboardHistory = false
+        showingToolsPanel = false
         pendingSwipeWord = null
         swipePath.clear()
         swipeMoved = false
@@ -274,7 +277,11 @@ class RomanKeyboardService : InputMethodService() {
             gravity = Gravity.CENTER
         }
         if (!isSensitiveInput()) {
-            toolbar.addView(toolButton("▤", 0.9f) {
+            toolbar.addView(toolButton("▦", 0.75f) {
+            showingToolsPanel = !showingToolsPanel
+            renderKeyboard()
+        })
+        toolbar.addView(toolButton("▤", 0.9f) {
                 showingClipboardHistory = !showingClipboardHistory
                 renderKeyboard()
             })
@@ -319,6 +326,33 @@ class RomanKeyboardService : InputMethodService() {
                 dp(44)
             )
         )
+
+        if (showingToolsPanel) {
+            val toolsScroll = HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = View.OVER_SCROLL_NEVER
+            }
+            val toolsRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            toolsRow.addView(toolButton("Clipboard", 1f) {
+                showingToolsPanel = false
+                showingClipboardHistory = true
+                renderKeyboard()
+            }, LinearLayout.LayoutParams(dp(104), dp(38)))
+            toolsRow.addView(toolButton("Emoji", 1f) { showEmojiPicker() }, LinearLayout.LayoutParams(dp(90), dp(38)))
+            toolsRow.addView(toolButton("Text Edit", 1f) { showEditMenu() }, LinearLayout.LayoutParams(dp(104), dp(38)))
+            toolsRow.addView(toolButton("Settings", 1f) {
+                startActivity(Intent(this, KeyboardSettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }, LinearLayout.LayoutParams(dp(100), dp(38)))
+            toolsRow.addView(toolButton("Close", 1f) {
+                showingToolsPanel = false
+                renderKeyboard()
+            }, LinearLayout.LayoutParams(dp(76), dp(38)))
+            toolsScroll.addView(toolsRow)
+            root.addView(toolsScroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(42)))
+        }
 
         if (showingClipboardHistory) {
             addClipboardHistoryPanel(root)
@@ -412,7 +446,8 @@ class RomanKeyboardService : InputMethodService() {
                 third,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    0,
+                    1f
                 )
             )
         } else {
@@ -458,7 +493,8 @@ class RomanKeyboardService : InputMethodService() {
             bottom,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                0,
+                1f
             )
         )
     }
@@ -1050,7 +1086,8 @@ class RomanKeyboardService : InputMethodService() {
             row,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                0,
+                1f
             )
         )
     }
@@ -1119,10 +1156,8 @@ class RomanKeyboardService : InputMethodService() {
                 if (isActionKey) "$selectedFont-medium" else selectedFont,
                 Typeface.NORMAL
             )
-            val keyHeight = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
-                .getInt("key_height_dp", 42).coerceIn(38, 50)
-            val params = LinearLayout.LayoutParams(0, dp(keyHeight), weight)
-            params.setMargins(dp(2), dp(1), dp(2), dp(1))
+            val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight)
+            params.setMargins(dp(2), dp(2), dp(2), dp(2))
             layoutParams = params
             elevation = dp(if (isActionKey) 0 else 1).toFloat()
             setPadding(dp(1), 0, dp(1), 0)

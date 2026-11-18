@@ -328,7 +328,7 @@ class RomanKeyboardService : InputMethodService() {
             updateSuggestionStrip()
         })
         val space = key(" ", 3.4f) {
-            currentInputConnection?.commitText(" ", 1)
+            commitSpaceWithOptionalCorrection()
             updateSuggestionStrip()
         }
         space.contentDescription = "Space"
@@ -378,6 +378,38 @@ class RomanKeyboardService : InputMethodService() {
                 performKeyFeedback()
                 action()
             }
+        }
+    }
+
+    private fun commitSpaceWithOptionalCorrection() {
+        val connection = currentInputConnection ?: return
+        val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
+        val before = connection.getTextBeforeCursor(48, 0)?.toString().orEmpty()
+        val word = before.takeLastWhile { it.isLetter() }
+        val corrections = mapOf(
+            "nuvuu" to "nuvvu",
+            "bagunanu" to "bagunnanu",
+            "bagunara" to "bagunnara",
+            "teh" to "the",
+            "adn" to "and",
+            "dont" to "don't",
+            "cant" to "can't",
+            "im" to "I'm"
+        )
+        val corrected = if (prefs.getBoolean("basic_autocorrect_enabled", false)) {
+            corrections[word.lowercase()]
+        } else null
+
+        if (corrected != null && word.isNotEmpty()) {
+            connection.deleteSurroundingTextInCodePoints(
+                word.codePointCount(0, word.length), 0
+            )
+            val replacement = if (word.first().isUpperCase()) {
+                corrected.replaceFirstChar { it.uppercase() }
+            } else corrected
+            connection.commitText("$replacement ", 1)
+        } else {
+            connection.commitText(" ", 1)
         }
     }
 

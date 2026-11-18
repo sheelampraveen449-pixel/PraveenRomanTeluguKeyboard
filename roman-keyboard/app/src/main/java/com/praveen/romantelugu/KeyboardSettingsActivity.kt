@@ -558,8 +558,8 @@ class KeyboardSettingsActivity : Activity() {
 
     private fun buildGlide() {
         section("GLIDE TYPING")
-        infoCard("Not enabled yet", "Swipe-to-type needs a gesture path recognizer and a validated Roman Telugu word model. It is not active in this version, so normal key tapping remains unchanged.")
-        infoCard("Planned behaviour", "Trace across letters without lifting your finger, preview the predicted word, and allow correction from the suggestion strip.")
+        infoCard("Offline swipe typing is available", "Slide your finger across the QWERTY letter keys without lifting it. The keyboard compares the traced letters with its built-in Roman Telugu word list and shows a candidate in the suggestion strip. Tap the candidate to insert it.")
+        infoCard("Current limitations", "Swipe matching uses the built-in word list and is an initial implementation. It may not recognise every word or match Gboard accuracy. Password fields and fields that disable suggestions do not offer swipe predictions.")
     }
 
     private fun buildMedia() {
@@ -577,14 +577,14 @@ class KeyboardSettingsActivity : Activity() {
         section("PRIVACY")
         infoCard("Local-first design", "Personal dictionary and clipboard history are stored locally. Voice recognition is handled by the Android speech service when you use the microphone.")
         section("FEATURE STATUS")
-        infoCard("Advanced features in development", "Swipe typing, downloadable language packs, cloud sync and sticker/GIF search are not currently active.")
+        infoCard("Advanced features in development", "Downloadable language packs, cloud sync and sticker/GIF search are not currently active. Offline swipe typing has an initial implementation and needs device testing.")
     }
 
     private fun buildAbout() {
         section("ROMAN TELUGU KEYBOARD")
         infoCard("Version 1.0", "A Roman Telugu keyboard with offline word suggestions and Telugu voice-to-Roman typing.")
         infoCard("Built for", "Fast Roman Telugu typing using a familiar English QWERTY layout.")
-        infoCard("Project status", "This is an actively developed build. Some advanced features such as next-word prediction, glide typing and additional language packs are not available yet.")
+        infoCard("Project status", "This is an actively developed build. Offline swipe typing has an initial implementation; additional language packs, cloud sync and sticker/GIF search are not available yet.")
     }
 
     private fun actionButton(label: String): Button =

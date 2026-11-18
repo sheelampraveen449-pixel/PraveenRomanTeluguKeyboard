@@ -1,0 +1,4 @@
+[submodule "NEW-GBOARD/LatinIME"]
+	path = NEW-GBOARD/LatinIME
+	url = https://github.com/LineageOS/android_packages_inputmethods_LatinIME.git
+	branch = lineage-24.0

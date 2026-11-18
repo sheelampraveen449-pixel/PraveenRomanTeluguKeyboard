@@ -115,6 +115,18 @@ class RomanKeyboardService : InputMethodService() {
         }
     }
 
+    // Reset transient UI state when switching to a new editor or app.
+    override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        symbolsMode = false
+        shifted = false
+        capsLock = false
+        showingClipboardHistory = false
+        pendingSwipeWord = null
+        swipePath.clear()
+        swipeMoved = false
+    }
+
     override fun onStartInputView(
         info: android.view.inputmethod.EditorInfo,
         restarting: Boolean

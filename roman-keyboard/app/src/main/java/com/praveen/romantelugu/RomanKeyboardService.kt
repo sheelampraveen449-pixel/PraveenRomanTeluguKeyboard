@@ -34,6 +34,7 @@ class RomanKeyboardService : InputMethodService() {
     private var shifted = false
     private var capsLock = false
     private var lastShiftTap = 0L
+    private var lastSpaceTapAt = 0L
     private lateinit var clipboardHistory: ClipboardHistoryStore
     private var clipboardManager: ClipboardManager? = null
     private var clipboardListener: ClipboardManager.OnPrimaryClipChangedListener? = null
@@ -472,8 +473,21 @@ class RomanKeyboardService : InputMethodService() {
         val connection = currentInputConnection ?: return
         if (isSensitiveInput()) {
             connection.commitText(" ", 1)
+            lastSpaceTapAt = 0L
             return
         }
+
+        // Match the familiar double-space full stop shortcut.
+        val now = android.os.SystemClock.uptimeMillis()
+        val beforeForPunctuation = connection.getTextBeforeCursor(2, 0)?.toString().orEmpty()
+        if (now - lastSpaceTapAt in 1..350 && beforeForPunctuation.endsWith(" ") &&
+            beforeForPunctuation.dropLast(1).lastOrNull()?.isWhitespace() == false) {
+            connection.deleteSurroundingTextInCodePoints(1, 0)
+            connection.commitText(". ", 1)
+            lastSpaceTapAt = 0L
+            return
+        }
+        lastSpaceTapAt = now
         val prefs = getSharedPreferences("keyboard_prefs", MODE_PRIVATE)
         val before = connection.getTextBeforeCursor(48, 0)?.toString().orEmpty()
         val word = before.takeLastWhile { it.isLetter() }

@@ -347,8 +347,14 @@ class RomanKeyboardService : InputMethodService() {
             }, LinearLayout.LayoutParams(dp(104), dp(38)))
             toolsRow.addView(toolButton("Emoji", 1f) { showEmojiPicker() }, LinearLayout.LayoutParams(dp(90), dp(38)))
             toolsRow.addView(toolButton("Text Edit", 1f) { showEditMenu() }, LinearLayout.LayoutParams(dp(104), dp(38)))
+            toolsRow.addView(toolButton("Theme", 1f) {
+                openSettingsPage("themes")
+            }, LinearLayout.LayoutParams(dp(88), dp(38)))
+            toolsRow.addView(toolButton("Resize", 1f) {
+                openSettingsPage("layout")
+            }, LinearLayout.LayoutParams(dp(88), dp(38)))
             toolsRow.addView(toolButton("Settings", 1f) {
-                startActivity(Intent(this, KeyboardSettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                openSettingsPage("home")
             }, LinearLayout.LayoutParams(dp(100), dp(38)))
             toolsRow.addView(toolButton("Close", 1f) {
                 showingToolsPanel = false
@@ -544,6 +550,13 @@ class RomanKeyboardService : InputMethodService() {
                 1f
             )
         )
+    }
+
+    private fun openSettingsPage(page: String) {
+        val intent = Intent(this, KeyboardSettingsActivity::class.java)
+            .putExtra("open_page", page)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 
     private fun toolButton(
